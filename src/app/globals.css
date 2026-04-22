@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+:root {
+  /* Colors */
+  --bg-primary: #08080F;
+  --bg-secondary: #0F0F1A;
+  --bg-card: #13131F;
+  
+  --primary: #00FF94;
+  --secondary: #7B61FF;
+  --accent: #FFB800;
+  
+  --danger: #FF4D4D;
+  --success: #00FF94;
+  
+  --text-primary: #FFFFFF;
+  --text-secondary: #8B8B9E;
+  --text-muted: #4A4A5E;
+  
+  --border-color: rgba(255, 255, 255, 0.06);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+}
+
+@theme {
+  --color-tx-bg: var(--bg-primary);
+  --color-tx-bg-secondary: var(--bg-secondary);
+  --color-tx-card: var(--bg-card);
+  --color-tx-primary: var(--primary);
+  --color-tx-secondary: var(--secondary);
+  --color-tx-accent: var(--accent);
+  --color-tx-danger: var(--danger);
+  --color-tx-success: var(--success);
+  --color-tx-text: var(--text-primary);
+  --color-tx-text-secondary: var(--text-secondary);
+  --color-tx-text-muted: var(--text-muted);
+  --color-tx-border: var(--border-color);
+  --color-tx-glass: var(--glass-bg);
+
+  --font-syne: var(--font-syne), sans-serif;
+  --font-inter: var(--font-inter), sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+
+  /* Custom classes for glassmorphism */
+  --shadow-glow: 0 0 20px rgba(0, 255, 148, 0.15);
+  --shadow-glow-purple: 0 0 20px rgba(123, 97, 255, 0.15);
+}
+
+html, body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-inter), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+  height: 100%;
+}
+
+/* Glassmorphism utility classes */
+@layer utilities {
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+  }
+  
+  .glass-pill {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-radius: 9999px;
+  }
+
+  /* Dot grid pattern */
+  .bg-dot-grid {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  
+  /* Noise overlay */
+  .noise-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    border-radius: inherit;
+  }
+  
+  .text-gradient-primary {
+    background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .text-gradient-gold {
+    background: linear-gradient(90deg, #FFE58F 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* Custom Scrollbar for desktop */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary); 
+}
+ 
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1); 
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2); 
+}
