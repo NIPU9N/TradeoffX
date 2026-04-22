@@ -148,7 +148,7 @@ export default function NewDecision() {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
+              transition={{ x: { type: "spring" as const, stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
               className="w-full"
             >
               {currentStep === 0 && <StepOne data={formData} update={updateFormData} />}

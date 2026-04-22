@@ -283,7 +283,7 @@ export default function OnboardingPage() {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                transition={{ delay: 0.2, type: "spring" as const, stiffness: 200 }}
                 className="w-20 h-20 rounded-full bg-tx-primary/10 border-2 border-tx-primary/50 flex items-center justify-center mx-auto mb-8 shadow-[0_0_40px_rgba(0,255,148,0.3)]"
               >
                 <Check className="w-10 h-10 text-tx-primary" />

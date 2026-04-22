@@ -85,7 +85,7 @@ export default function LandingPage() {
             <span className="w-1.5 h-1.5 rounded-full bg-tx-primary animate-pulse" />
             For Indian Retail Investors
           </motion.div>
-          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, type: "spring", stiffness: 100 }} className="font-syne text-7xl font-black leading-[1.05] mb-6 tracking-tight">
+          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, type: "spring" as const, stiffness: 100 }} className="font-syne text-7xl font-black leading-[1.05] mb-6 tracking-tight">
             The <span className="text-tx-primary drop-shadow-[0_0_30px_rgba(0,255,148,0.6)]">Why</span> Behind<br />Every Trade.
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="text-xl text-tx-text-secondary max-w-2xl mx-auto mb-12 leading-relaxed">
