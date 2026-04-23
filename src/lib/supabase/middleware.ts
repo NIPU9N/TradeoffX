@@ -31,8 +31,10 @@ export async function updateSession(request: NextRequest) {
 
   // Refresh session — IMPORTANT: do not remove this
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const user = session?.user;
 
   // Protected routes — redirect to landing if not authenticated
   const isProtectedRoute =

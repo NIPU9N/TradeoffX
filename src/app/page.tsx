@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Zap, ArrowRight, Brain, BarChart2, BookOpen, TrendingUp, Shield, Star, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -36,6 +37,7 @@ export default function LandingPage() {
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const router = useRouter();
   const supabase = createClient();
 
   const [user, setUser] = useState<any>(null);
@@ -48,7 +50,15 @@ export default function LandingPage() {
       setIsAuthLoading(false);
     }
     checkUser();
-  }, [supabase]);
+
+    // Invalidate Next.js router cache on auth state change to prevent cached redirects
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      checkUser();
+      router.refresh();
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase, router]);
 
   const handleLogin = async () => {
     await supabase.auth.signInWithOAuth({
@@ -80,6 +90,7 @@ export default function LandingPage() {
             ) : user ? (
               <Link
                 href="/dashboard"
+                prefetch={false}
                 className="px-5 py-2.5 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-xl text-sm transition-all duration-300 shadow-[0_0_20px_rgba(0,255,148,0.3)] hover:shadow-[0_0_30px_rgba(0,255,148,0.5)] active:scale-95"
               >
                 Go to Dashboard
@@ -129,6 +140,7 @@ export default function LandingPage() {
             ) : user ? (
               <Link
                 href="/dashboard"
+                prefetch={false}
                 className="group flex items-center gap-3 px-8 py-4 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-2xl text-lg transition-all duration-300 shadow-[0_0_30px_rgba(0,255,148,0.3)] hover:shadow-[0_0_50px_rgba(0,255,148,0.5)] active:scale-95"
               >
                 Go to Dashboard
@@ -143,7 +155,7 @@ export default function LandingPage() {
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Link>
             )}
-            <Link href="/dashboard" className="px-8 py-4 border border-white/10 hover:border-white/25 text-tx-text-secondary hover:text-white rounded-2xl text-lg font-medium transition-all duration-300">
+            <Link href="/dashboard" prefetch={false} className="px-8 py-4 border border-white/10 hover:border-white/25 text-tx-text-secondary hover:text-white rounded-2xl text-lg font-medium transition-all duration-300">
               See Dashboard →
             </Link>
           </motion.div>
@@ -264,7 +276,7 @@ export default function LandingPage() {
             {isAuthLoading ? (
                <div className="w-64 h-16 bg-white/5 animate-pulse rounded-2xl mx-auto" />
             ) : user ? (
-              <Link href="/dashboard" className="group inline-flex items-center gap-3 px-10 py-5 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-2xl text-xl transition-all duration-300 shadow-[0_0_40px_rgba(0,255,148,0.3)] hover:shadow-[0_0_60px_rgba(0,255,148,0.5)] active:scale-95">
+              <Link href="/dashboard" prefetch={false} className="group inline-flex items-center gap-3 px-10 py-5 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-2xl text-xl transition-all duration-300 shadow-[0_0_40px_rgba(0,255,148,0.3)] hover:shadow-[0_0_60px_rgba(0,255,148,0.5)] active:scale-95">
                 Go to Dashboard
                 <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-1" />
               </Link>
