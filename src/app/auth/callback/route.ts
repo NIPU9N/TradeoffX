@@ -17,16 +17,17 @@ export async function GET(request: Request) {
 
     const response = NextResponse.redirect(redirectUrl);
 
-    // Create a client that explicitly sets cookies on the redirect response
     const { createServerClient } = await import("@supabase/ssr");
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           getAll() {
-            // Not strictly necessary for exchangeCodeForSession, but good practice
-            return [];
+            return cookieStore.getAll();
           },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) =>
