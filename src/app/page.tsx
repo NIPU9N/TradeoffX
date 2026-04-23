@@ -124,7 +124,9 @@ export default function LandingPage() {
             Stop trading on vibes. TradeoffX is a premium investment decision journal that reveals the <strong className="text-white">behavioral patterns costing you money</strong> — so you can finally trade like the investor you want to be.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex items-center justify-center gap-4">
-            {user ? (
+            {isAuthLoading ? (
+               <div className="w-56 h-14 bg-white/5 animate-pulse rounded-2xl" />
+            ) : user ? (
               <Link
                 href="/dashboard"
                 className="group flex items-center gap-3 px-8 py-4 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-2xl text-lg transition-all duration-300 shadow-[0_0_30px_rgba(0,255,148,0.3)] hover:shadow-[0_0_50px_rgba(0,255,148,0.5)] active:scale-95"
@@ -259,7 +261,9 @@ export default function LandingPage() {
             <Shield className="w-12 h-12 text-tx-primary mx-auto mb-8 drop-shadow-[0_0_20px_rgba(0,255,148,0.5)]" />
             <h2 className="font-syne text-6xl font-black mb-6 leading-tight">The missing layer between<br />you and better returns.</h2>
             <p className="text-lg text-tx-text-secondary mb-12">Join traders who&apos;ve turned self-awareness into their biggest edge.</p>
-            {user ? (
+            {isAuthLoading ? (
+               <div className="w-64 h-16 bg-white/5 animate-pulse rounded-2xl mx-auto" />
+            ) : user ? (
               <Link href="/dashboard" className="group inline-flex items-center gap-3 px-10 py-5 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-2xl text-xl transition-all duration-300 shadow-[0_0_40px_rgba(0,255,148,0.3)] hover:shadow-[0_0_60px_rgba(0,255,148,0.5)] active:scale-95">
                 Go to Dashboard
                 <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-1" />
