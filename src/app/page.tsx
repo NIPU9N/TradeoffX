@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Zap, ArrowRight, Brain, BarChart2, BookOpen, TrendingUp, Shield, Star, ChevronDown } from "lucide-react";
@@ -38,6 +38,18 @@ export default function LandingPage() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
   const supabase = createClient();
 
+  const [user, setUser] = useState<any>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setIsAuthLoading(false);
+    }
+    checkUser();
+  }, [supabase]);
+
   const handleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -62,12 +74,32 @@ export default function LandingPage() {
           <nav className="flex items-center gap-8">
             <a href="#features" className="text-sm text-tx-text-secondary hover:text-white transition-colors">Features</a>
             <a href="#proof" className="text-sm text-tx-text-secondary hover:text-white transition-colors">Why it works</a>
-            <Link
-              href="/onboarding"
-              className="px-5 py-2.5 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-xl text-sm transition-all duration-300 shadow-[0_0_20px_rgba(0,255,148,0.3)] hover:shadow-[0_0_30px_rgba(0,255,148,0.5)] active:scale-95"
-            >
-              Start Free →
-            </Link>
+            
+            {isAuthLoading ? (
+              <div className="w-20 h-8 bg-white/5 animate-pulse rounded-xl" />
+            ) : user ? (
+              <Link
+                href="/dashboard"
+                className="px-5 py-2.5 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-xl text-sm transition-all duration-300 shadow-[0_0_20px_rgba(0,255,148,0.3)] hover:shadow-[0_0_30px_rgba(0,255,148,0.5)] active:scale-95"
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <div className="flex items-center gap-6">
+                <button 
+                  onClick={handleLogin}
+                  className="text-sm font-medium text-tx-text-secondary hover:text-white transition-colors"
+                >
+                  Sign In
+                </button>
+                <Link
+                  href="/onboarding"
+                  className="px-5 py-2.5 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-xl text-sm transition-all duration-300 shadow-[0_0_20px_rgba(0,255,148,0.3)] hover:shadow-[0_0_30px_rgba(0,255,148,0.5)] active:scale-95"
+                >
+                  Start Free →
+                </Link>
+              </div>
+            )}
           </nav>
         </div>
         <div className="absolute inset-0 -z-10 bg-[#08080F]/80 backdrop-blur-xl border-b border-white/5" />
@@ -92,13 +124,23 @@ export default function LandingPage() {
             Stop trading on vibes. TradeoffX is a premium investment decision journal that reveals the <strong className="text-white">behavioral patterns costing you money</strong> — so you can finally trade like the investor you want to be.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex items-center justify-center gap-4">
-            <Link
-              href="/onboarding"
-              className="group flex items-center gap-3 px-8 py-4 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-2xl text-lg transition-all duration-300 shadow-[0_0_30px_rgba(0,255,148,0.3)] hover:shadow-[0_0_50px_rgba(0,255,148,0.5)] active:scale-95"
-            >
-              Start Journaling Free
-              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-            </Link>
+            {user ? (
+              <Link
+                href="/dashboard"
+                className="group flex items-center gap-3 px-8 py-4 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-2xl text-lg transition-all duration-300 shadow-[0_0_30px_rgba(0,255,148,0.3)] hover:shadow-[0_0_50px_rgba(0,255,148,0.5)] active:scale-95"
+              >
+                Go to Dashboard
+                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+              </Link>
+            ) : (
+              <Link
+                href="/onboarding"
+                className="group flex items-center gap-3 px-8 py-4 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-2xl text-lg transition-all duration-300 shadow-[0_0_30px_rgba(0,255,148,0.3)] hover:shadow-[0_0_50px_rgba(0,255,148,0.5)] active:scale-95"
+              >
+                Start Journaling Free
+                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+              </Link>
+            )}
             <Link href="/dashboard" className="px-8 py-4 border border-white/10 hover:border-white/25 text-tx-text-secondary hover:text-white rounded-2xl text-lg font-medium transition-all duration-300">
               See Dashboard →
             </Link>
@@ -217,10 +259,17 @@ export default function LandingPage() {
             <Shield className="w-12 h-12 text-tx-primary mx-auto mb-8 drop-shadow-[0_0_20px_rgba(0,255,148,0.5)]" />
             <h2 className="font-syne text-6xl font-black mb-6 leading-tight">The missing layer between<br />you and better returns.</h2>
             <p className="text-lg text-tx-text-secondary mb-12">Join traders who&apos;ve turned self-awareness into their biggest edge.</p>
-            <Link href="/onboarding" className="group inline-flex items-center gap-3 px-10 py-5 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-2xl text-xl transition-all duration-300 shadow-[0_0_40px_rgba(0,255,148,0.3)] hover:shadow-[0_0_60px_rgba(0,255,148,0.5)] active:scale-95">
-              Start for Free
-              <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-1" />
-            </Link>
+            {user ? (
+              <Link href="/dashboard" className="group inline-flex items-center gap-3 px-10 py-5 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-2xl text-xl transition-all duration-300 shadow-[0_0_40px_rgba(0,255,148,0.3)] hover:shadow-[0_0_60px_rgba(0,255,148,0.5)] active:scale-95">
+                Go to Dashboard
+                <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-1" />
+              </Link>
+            ) : (
+              <Link href="/onboarding" className="group inline-flex items-center gap-3 px-10 py-5 bg-tx-primary hover:bg-tx-primary/90 text-[#08080F] font-syne font-bold rounded-2xl text-xl transition-all duration-300 shadow-[0_0_40px_rgba(0,255,148,0.3)] hover:shadow-[0_0_60px_rgba(0,255,148,0.5)] active:scale-95">
+                Start for Free
+                <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-1" />
+              </Link>
+            )}
             <p className="mt-4 text-xs text-tx-text-muted">No credit card. No BS. Just clarity.</p>
           </motion.div>
         </div>
