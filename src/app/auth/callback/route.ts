@@ -11,18 +11,15 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      const isLocalEnv = process.env.NODE_ENV === "development";
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`);
-      } 
-      
-      // For production (Vercel), ensure we use the correct protocol and host
       const forwardedHost = request.headers.get("x-forwarded-host");
-      if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
-      }
+      const isLocalEnv = process.env.NODE_ENV === "development";
       
-      return NextResponse.redirect(`${origin}${next}`);
+      let redirectUrl = `${origin}${next}`;
+      if (!isLocalEnv && forwardedHost) {
+        redirectUrl = `https://${forwardedHost}${next}`;
+      }
+
+      return NextResponse.redirect(redirectUrl);
     }
   }
 
