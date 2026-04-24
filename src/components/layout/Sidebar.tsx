@@ -15,7 +15,9 @@ import {
   TrendingUp,
   GitCompare,
   Gamepad2,
-  DollarSign
+  DollarSign,
+  BarChart3,
+  Wallet
 } from "lucide-react";
 import { getProfile } from "@/lib/api";
 import type { Profile } from "@/types";
@@ -69,8 +71,8 @@ export function Sidebar() {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "New Decision", href: "/new", icon: PlusCircle, highlight: true },
     { name: "My Decisions", href: "/decisions", icon: BookOpen },
-    { name: "P&L Analysis", href: "/pl", icon: TrendingUp },
-    ...(isPractice ? [{ name: "Practice Portfolio", href: "/practice", icon: TrendingUp }] : []),
+    { name: "P&L Analysis", href: "/pl", icon: BarChart3 },
+    ...(isPractice ? [{ name: "Practice Portfolio", href: "/practice", icon: Wallet }] : []),
     { name: "Outcome Review", href: "/review", icon: CheckCircle },
     { name: "Pattern Mirror", href: "/mirror", icon: Brain },
     { name: "My Progress", href: "/compare", icon: GitCompare, pro: true },
