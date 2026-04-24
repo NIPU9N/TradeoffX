@@ -27,6 +27,7 @@ export async function POST() {
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", user.id)
+    .limit(1)
     .select()
     .single();
 

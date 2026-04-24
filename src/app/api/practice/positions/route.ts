@@ -40,6 +40,7 @@ export async function POST(request: Request) {
     .from("practice_portfolio")
     .select("*")
     .eq("user_id", user.id)
+    .limit(1)
     .single();
 
   if (portfolioError || !portfolio) {

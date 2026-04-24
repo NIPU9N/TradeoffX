@@ -73,6 +73,7 @@ export async function POST(
     .from("practice_portfolio")
     .select("virtual_capital")
     .eq("user_id", user.id)
+    .limit(1)
     .single();
 
   const virtualCapital = portfolio?.virtual_capital ?? 1000000;
