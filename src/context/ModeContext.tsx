@@ -47,9 +47,9 @@ export function ModeProvider({ children }: { children: ReactNode }) {
       : {
           "--primary": "#4EA8FF",
           "--accent": "#4EA8FF",
-          "--bg-primary": "#07102b",
-          "--bg-secondary": "#081638",
-          "--bg-card": "#0f1d45",
+          "--bg-primary": "#08080F",
+          "--bg-secondary": "#0F0F1A",
+          "--bg-card": "#13131F",
           "--border-color": "rgba(78, 168, 255, 0.12)",
           "--glass-bg": "rgba(78, 168, 255, 0.08)",
           "--shadow-glow": "0 0 20px rgba(78, 168, 255, 0.15)",
