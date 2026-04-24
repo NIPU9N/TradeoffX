@@ -28,7 +28,7 @@ export interface Decision {
   mode: "real" | "practice";
   // The Trade
   asset_name: string;
-  asset_type: "stock" | "mutual_fund" | "crypto" | "gold" | "fd" | "other";
+  asset_type: "stock" | "mutual_fund" | "crypto" | "gold" | "fd" | "futures" | "options" | "other";
   investment_amount: number;
   decision_date: string;
   // The Why
@@ -123,7 +123,7 @@ export interface PracticePosition {
   user_id: string;
   decision_id: string;
   asset_name: string;
-  asset_type: "stock" | "mutual_fund" | "crypto" | "gold" | "fd" | "other";
+  asset_type: "stock" | "mutual_fund" | "crypto" | "gold" | "fd" | "futures" | "options" | "other";
   quantity: number;
   entry_price: number;
   current_price: number;
@@ -184,7 +184,7 @@ export interface DashboardStats {
 
 export const createDecisionSchema = z.object({
   asset_name: z.string().min(1, "Asset name is required"),
-  asset_type: z.enum(["stock", "mutual_fund", "crypto", "gold", "fd", "other"]),
+  asset_type: z.enum(["stock", "mutual_fund", "crypto", "gold", "fd", "futures", "options", "other"]),
   investment_amount: z.number().positive("Amount must be positive"),
   decision_date: z.string().min(1, "Date is required"),
   thesis: z.string().min(10, "Thesis must be at least 10 characters"),

@@ -302,6 +302,8 @@ function StepOne({ data, update }: { data: CreateDecisionInput & { unit_price?: 
     { label: "₿ Crypto", val: "crypto" },
     { label: "🥇 Gold", val: "gold" },
     { label: "🏛️ FD", val: "fd" },
+    { label: "🎯 Futures", val: "futures" },
+    { label: "📑 Options", val: "options" },
     { label: "➕ Other", val: "other" },
   ];
 
