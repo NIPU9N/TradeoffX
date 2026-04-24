@@ -82,7 +82,15 @@ export async function getPracticePositions(): Promise<{ positions: any[] }> {
   return apiFetch("/api/practice/positions");
 }
 
-export async function getPracticePortfolio(): Promise<{ portfolio: any }> {
+export async function getPracticePortfolio(): Promise<{
+  portfolio: any;
+  metrics: {
+    deployed_capital: number;
+    free_capital: number;
+    unrealized_pnl: number;
+    open_positions: number;
+  };
+}> {
   return apiFetch("/api/practice/portfolio");
 }
 

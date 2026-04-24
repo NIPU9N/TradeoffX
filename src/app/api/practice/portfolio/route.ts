@@ -14,6 +14,7 @@ export async function GET() {
     .from("practice_portfolio")
     .select("*")
     .eq("user_id", user.id)
+    .order("updated_at", { ascending: false })
     .limit(1)
     .single();
 

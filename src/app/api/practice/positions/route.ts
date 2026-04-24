@@ -40,6 +40,7 @@ export async function POST(request: Request) {
     .from("practice_portfolio")
     .select("*")
     .eq("user_id", user.id)
+    .order("updated_at", { ascending: false })
     .limit(1)
     .single();
 
@@ -47,20 +48,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Practice portfolio not found" }, { status: 404 });
   }
 
-  const available_capital = portfolio.virtual_capital - (portfolio.current_value - portfolio.virtual_capital <= 0
-    ? portfolio.current_value - (portfolio.total_return_amount)
-    : portfolio.virtual_capital - portfolio.total_return_amount);
-
   // 2. Check available capital
-  const deployed = portfolio.virtual_capital - (portfolio.current_value - portfolio.total_return_amount);
-  const free_capital = portfolio.virtual_capital - deployed;
-
-  // Simpler: track available as virtual_capital - sum of all open positions' investment_amount
-  const { data: openPositions } = await supabase
+  const { data: openPositions, error: openPositionsError } = await supabase
     .from("practice_positions")
     .select("investment_amount")
     .eq("user_id", user.id)
     .eq("status", "open");
+
+  if (openPositionsError) {
+    return NextResponse.json({ error: openPositionsError.message }, { status: 500 });
+  }
 
   const totalDeployed = (openPositions ?? []).reduce((sum, p) => sum + p.investment_amount, 0);
   const freeCapital = portfolio.virtual_capital - totalDeployed;
@@ -96,9 +93,8 @@ export async function POST(request: Request) {
   if (positionError) return NextResponse.json({ error: positionError.message }, { status: 500 });
 
   // 4. Update portfolio totals
-  const newDeployed = totalDeployed + investment_amount;
   await supabase.from("practice_portfolio").update({
-    current_value: portfolio.virtual_capital, // will be recalculated when prices refresh
+    current_value: portfolio.virtual_capital,
     updated_at: new Date().toISOString(),
   }).eq("user_id", user.id);
 

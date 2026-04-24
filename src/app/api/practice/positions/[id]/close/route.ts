@@ -57,24 +57,37 @@ export async function POST(
   }
 
   // 4. Recalculate portfolio totals
-  const { data: allClosed } = await supabase
+  const { data: allClosed, error: allClosedError } = await supabase
     .from("practice_positions")
     .select("return_amount")
     .eq("user_id", user.id)
     .eq("status", "closed");
 
-  const { data: allOpen } = await supabase
+  if (allClosedError) {
+    return NextResponse.json({ error: allClosedError.message }, { status: 500 });
+  }
+
+  const { data: allOpen, error: allOpenError } = await supabase
     .from("practice_positions")
     .select("current_value, investment_amount")
     .eq("user_id", user.id)
     .eq("status", "open");
 
-  const { data: portfolio } = await supabase
+  if (allOpenError) {
+    return NextResponse.json({ error: allOpenError.message }, { status: 500 });
+  }
+
+  const { data: portfolio, error: portfolioError } = await supabase
     .from("practice_portfolio")
     .select("virtual_capital")
     .eq("user_id", user.id)
+    .order("updated_at", { ascending: false })
     .limit(1)
     .single();
+
+  if (portfolioError || !portfolio) {
+    return NextResponse.json({ error: portfolioError?.message ?? "Practice portfolio not found" }, { status: 500 });
+  }
 
   const virtualCapital = portfolio?.virtual_capital ?? 1000000;
   const closedPnl = (allClosed ?? []).reduce((sum, p) => sum + (p.return_amount ?? 0), 0);

@@ -31,10 +31,18 @@ type Position = {
   exit_price: number | null;
 };
 
+type PortfolioMetrics = {
+  deployed_capital: number;
+  free_capital: number;
+  unrealized_pnl: number;
+  open_positions: number;
+};
+
 type BatchPrices = Record<string, { current_price?: number }>;
 
 export default function PracticePortfolioPage() {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+  const [metrics, setMetrics] = useState<PortfolioMetrics | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
   const [livePrices, setLivePrices] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -53,13 +61,14 @@ export default function PracticePortfolioPage() {
       else setRefreshing(true);
       setError(null);
 
-      const [{ portfolio: portfolioRes }, { positions: positionsRes }] = await Promise.all([
+      const [{ portfolio: portfolioRes, metrics }, { positions: positionsRes }] = await Promise.all([
         getPracticePortfolio(),
         getPracticePositions(),
       ]);
 
       const normalized = (positionsRes || []) as Position[];
       setPortfolio(portfolioRes);
+      setMetrics(metrics ?? null);
       setPositions(normalized);
 
       const openSymbols = normalized
@@ -184,6 +193,25 @@ export default function PracticePortfolioPage() {
           icon={computedOpenPnL >= 0 ? <TrendingUp className="w-5 h-5 text-tx-primary" /> : <TrendingDown className="w-5 h-5 text-tx-danger" />}
         />
       </div>
+      {metrics && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card
+            label="Free Capital"
+            value={`₹${Number(metrics.free_capital).toLocaleString()}`}
+            icon={<RefreshCw className="w-5 h-5 text-tx-secondary" />}
+          />
+          <Card
+            label="Open Positions"
+            value={`${metrics.open_positions}`}
+            icon={<Gamepad2 className="w-5 h-5 text-tx-primary" />}
+          />
+          <Card
+            label="Unrealized P&L"
+            value={`${metrics.unrealized_pnl >= 0 ? "+" : "-"}₹${Math.abs(metrics.unrealized_pnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+            icon={metrics.unrealized_pnl >= 0 ? <TrendingUp className="w-5 h-5 text-tx-primary" /> : <TrendingDown className="w-5 h-5 text-tx-danger" />}
+          />
+        </div>
+      )}
 
       <section className="glass-card p-6">
         <h2 className="font-syne text-xl font-bold mb-4">Open Positions</h2>
