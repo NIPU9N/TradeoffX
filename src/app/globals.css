@@ -2,13 +2,13 @@
 
 :root {
   /* Colors */
-  --bg-primary: #0B0500;
-  --bg-secondary: #120D00;
-  --bg-card: #1F1600;
+  --bg-primary: #07102b;
+  --bg-secondary: #081638;
+  --bg-card: #0f1d45;
   
-  --primary: #FFB800;
+  --primary: #4EA8FF;
   --secondary: #7B61FF;
-  --accent: #FFB800;
+  --accent: #4EA8FF;
   
   --danger: #FF4D4D;
   --success: #00FF94;
@@ -17,8 +17,8 @@
   --text-secondary: #8B8B9E;
   --text-muted: #4A4A5E;
   
-  --border-color: rgba(255, 184, 0, 0.08);
-  --glass-bg: rgba(255, 184, 0, 0.06);
+  --border-color: rgba(78, 168, 255, 0.12);
+  --glass-bg: rgba(78, 168, 255, 0.06);
 }
 
 @theme {

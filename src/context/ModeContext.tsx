@@ -45,14 +45,14 @@ export function ModeProvider({ children }: { children: ReactNode }) {
           "--shadow-glow": "0 0 20px rgba(0, 255, 148, 0.15)",
         }
       : {
-          "--primary": "#FFB800",
-          "--accent": "#FFB800",
-          "--bg-primary": "#0B0500",
-          "--bg-secondary": "#120D00",
-          "--bg-card": "#1F1600",
-          "--border-color": "rgba(255, 184, 0, 0.1)",
-          "--glass-bg": "rgba(255, 184, 0, 0.08)",
-          "--shadow-glow": "0 0 20px rgba(255, 184, 0, 0.15)",
+          "--primary": "#4EA8FF",
+          "--accent": "#4EA8FF",
+          "--bg-primary": "#07102b",
+          "--bg-secondary": "#081638",
+          "--bg-card": "#0f1d45",
+          "--border-color": "rgba(78, 168, 255, 0.12)",
+          "--glass-bg": "rgba(78, 168, 255, 0.08)",
+          "--shadow-glow": "0 0 20px rgba(78, 168, 255, 0.15)",
         };
 
     Object.entries(themeVars).forEach(([key, value]) => {
