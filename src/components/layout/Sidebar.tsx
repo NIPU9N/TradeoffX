@@ -83,7 +83,7 @@ export function Sidebar() {
         {/* Logo Section */}
         <div className="p-6 pb-4">
           <Link href="/" className="flex items-center gap-3 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-[rgba(0,255,148,0.1)] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-tx-primary/10 flex items-center justify-center">
               <Zap className="w-5 h-5 text-tx-primary" />
             </div>
             <span className="font-syne font-bold text-xl text-white">TradeoffX</span>
@@ -93,7 +93,7 @@ export function Sidebar() {
 
         {/* Mode Toggle Section */}
         <div className="px-4 pb-4">
-          <div className="flex bg-[#11111A] rounded-xl p-1 border border-tx-border relative overflow-hidden">
+          <div className="flex bg-tx-card rounded-xl p-1 border border-tx-border relative overflow-hidden">
             <div className="w-1/2 relative z-10">
               <button
                 onClick={() => handleModeSwitch("practice")}
@@ -139,9 +139,9 @@ export function Sidebar() {
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300",
                     isActive
-                      ? "bg-[rgba(0,255,148,0.08)] text-tx-primary font-medium"
+                      ? "bg-tx-primary/10 text-tx-primary font-medium"
                       : "text-tx-text-secondary hover:text-white hover:bg-tx-glass",
-                    item.highlight && !isActive && "text-tx-primary hover:text-tx-primary drop-shadow-[0_0_8px_rgba(0,255,148,0.3)]"
+                    item.highlight && !isActive && "text-tx-primary hover:text-tx-primary drop-shadow-[0_0_8px_rgba(255,255,255,0.12)]"
                   )}
                 >
                   {isActive && (
@@ -191,7 +191,8 @@ export function Sidebar() {
             initial={{ opacity: 0, y: -50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
-            className="fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-4 rounded-2xl glass-card border border-tx-primary/30 shadow-[0_0_30px_rgba(0,255,148,0.15)] flex items-center gap-3 max-w-md w-full"
+            className="fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 py-4 rounded-2xl glass-card border border-tx-primary/30 flex items-center gap-3 max-w-md w-full"
+            style={{ boxShadow: isPractice ? "0 0 30px rgba(0,255,148,0.15)" : "0 0 30px rgba(255,184,0,0.15)" }}
           >
             <div className="w-2 h-10 rounded-full bg-tx-primary" />
             <p className="text-sm font-medium text-white leading-relaxed">{toastMessage}</p>

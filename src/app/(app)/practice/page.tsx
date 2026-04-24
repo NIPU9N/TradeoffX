@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { motion } from "framer-motion";
 import { Gamepad2, Loader2, RefreshCw, TrendingDown, TrendingUp, Wallet, XCircle } from "lucide-react";
 import { closePracticePosition, getPracticePortfolio, getPracticePositions, resetPracticePortfolio } from "@/lib/api";
+import { useMode } from "@/context/ModeContext";
 import { KNOWN_ASSETS } from "@/lib/assets";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +50,7 @@ export default function PracticePortfolioPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [closingPositionId, setClosingPositionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { isPractice } = useMode();
 
   const symbolByAssetName = useMemo(
     () => Object.fromEntries(KNOWN_ASSETS.map((a) => [a.name, a.symbol])),
@@ -102,7 +104,7 @@ export default function PracticePortfolioPage() {
   }, [symbolByAssetName]);
 
   useEffect(() => {
-    loadData();
+    void (async () => { await loadData(); })();
   }, [loadData]);
 
   const computedOpenPnL = useMemo(() => {
@@ -153,18 +155,22 @@ export default function PracticePortfolioPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
         <div>
           <h1 className="font-syne text-4xl font-bold">Practice Portfolio</h1>
-          <p className="text-tx-text-secondary mt-2">Virtual capital. Real discipline. Zero regret tuition.</p>
+          <p className="text-tx-text-secondary mt-2 max-w-2xl">
+            {isPractice
+              ? "Virtual capital. real discipline. Zero regret tuition."
+              : "This view is optimized for Practice Mode, where you can test ideas before committing real capital."}
+          </p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => loadData(true)}
-            className="px-4 py-2 rounded-xl border border-tx-border bg-tx-card text-tx-text-secondary hover:text-white"
+            className="px-4 py-2 rounded-xl bg-tx-primary text-tx-bg font-semibold transition-all hover:opacity-90"
           >
             <span className="inline-flex items-center gap-2">
-              <RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin text-tx-primary")} />
+              <RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin text-tx-bg")} />
               Refresh
             </span>
           </button>
@@ -217,7 +223,9 @@ export default function PracticePortfolioPage() {
         <h2 className="font-syne text-xl font-bold mb-4">Open Positions</h2>
         <div className="space-y-3">
           {positions.filter((p) => p.status === "open").length === 0 && (
-            <p className="text-tx-text-secondary py-10 text-center">No open positions yet. Log a practice decision and execute it.</p>
+            <p className="text-tx-text-secondary py-10 text-center">
+              No practice trades yet. ₹10,00,000 is just sitting there. Bro what are you waiting for. 🎮
+            </p>
           )}
           {positions
             .filter((p) => p.status === "open")
@@ -260,7 +268,9 @@ export default function PracticePortfolioPage() {
         <h2 className="font-syne text-xl font-bold mb-4">Closed Positions</h2>
         <div className="space-y-3">
           {positions.filter((p) => p.status === "closed").length === 0 && (
-            <p className="text-tx-text-secondary py-8 text-center">No closed positions yet.</p>
+            <p className="text-tx-text-secondary py-8 text-center">
+              No closed practice trades yet. Close a position to see how your thesis played out.
+            </p>
           )}
           {positions
             .filter((p) => p.status === "closed")

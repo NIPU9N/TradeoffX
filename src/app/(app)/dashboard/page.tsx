@@ -36,6 +36,11 @@ export default function Dashboard() {
   const { mode, isPractice } = useMode();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const pageTitle = isPractice ? "Practice Simulator Studio" : "Live Portfolio Command Center";
+  const pageSubtitle = isPractice
+    ? "Virtual cash. real lessons. Use this board to level up without losing a rupee."
+    : "Real trades. real accountability. Keep your thesis disciplined for live capital.";
+
   const loadData = useCallback(async (silent = false) => {
     try {
       if (!silent) setIsLoading(true);
@@ -43,8 +48,9 @@ export default function Dashboard() {
       const data = await fetchDashboard(mode);
       setStats(data);
       setError(null);
-    } catch (err: any) {
-      setError(err.message || "Failed to load dashboard data");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to load dashboard data";
+      setError(message);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -52,7 +58,9 @@ export default function Dashboard() {
   }, [mode]);
 
   // Initial load
-  useEffect(() => { loadData(); }, [loadData, mode]);
+  useEffect(() => {
+    void (async () => { await loadData(); })();
+  }, [loadData]);
 
   // Auto-refresh when tab regains focus (after navigating back from logging a decision)
   useEffect(() => {
@@ -100,25 +108,21 @@ export default function Dashboard() {
       animate="visible"
     >
       {/* Top Bar */}
-      <motion.div variants={itemVariants} className="flex justify-between items-end">
+      <motion.div variants={itemVariants} className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6">
         <div>
-          <h1 className="font-syne text-4xl font-bold mb-2">Decision Intelligence Hub</h1>
-          <p className="text-tx-text-secondary text-lg">
-            {stats.pending_reviews.length > 0
-              ? `You have ${stats.pending_reviews.length} decisions awaiting review. Don't ghost your portfolio.`
-              : "All clear! Every trade is documented and reviewed."}
-          </p>
-          <span className="inline-flex mt-3 px-3 py-1 rounded-full text-xs border border-tx-border bg-tx-card text-tx-text-secondary uppercase tracking-wider">
+          <h1 className="font-syne text-4xl font-bold mb-2">{pageTitle}</h1>
+          <p className="text-tx-text-secondary text-lg max-w-2xl">{pageSubtitle}</p>
+          <span className="inline-flex mt-4 px-3 py-1 rounded-full text-xs font-semibold border border-tx-primary/25 bg-tx-primary/10 text-tx-primary uppercase tracking-widest">
             {isPractice ? "Practice Mode" : "Real Money Mode"}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => loadData(true)}
             disabled={isRefreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-tx-card border border-tx-border rounded-xl text-sm text-tx-text-secondary hover:text-white hover:border-tx-primary transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-tx-primary text-tx-bg font-semibold rounded-xl text-sm transition-all disabled:opacity-50"
           >
-            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin text-tx-primary")} />
+            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin text-tx-bg")} />
             {isRefreshing ? "Refreshing..." : "Refresh"}
           </button>
           <div className="flex items-center gap-2 bg-tx-card/50 border border-tx-border px-4 py-2 rounded-full backdrop-blur-md">
@@ -149,10 +153,10 @@ export default function Dashboard() {
             <span className="text-sm text-tx-text-secondary font-medium">Win Rate</span>
             {/* SVG ring showing actual win rate */}
             <svg className="w-8 h-8 -rotate-90" viewBox="0 0 32 32">
-              <circle cx="16" cy="16" r="12" fill="none" stroke="rgba(0,255,148,0.15)" strokeWidth="3" />
+              <circle cx="16" cy="16" r="12" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
               <circle
                 cx="16" cy="16" r="12" fill="none"
-                stroke="#00ff94" strokeWidth="3"
+                stroke="var(--primary)" strokeWidth="3"
                 strokeDasharray={`${2 * Math.PI * 12}`}
                 strokeDashoffset={`${2 * Math.PI * 12 * (1 - stats.win_rate / 100)}`}
                 strokeLinecap="round"
@@ -174,7 +178,7 @@ export default function Dashboard() {
             <span className="text-sm text-tx-text-secondary font-medium">Day Streak</span>
           </div>
           <div className="relative z-10">
-            <span className="font-syne text-5xl font-bold text-tx-accent block mb-1 drop-shadow-[0_0_12px_rgba(255,184,0,0.4)]">🔥 {stats.current_streak}</span>
+            <span className="font-syne text-5xl font-bold text-tx-primary block mb-1 drop-shadow-[0_0_12px_rgba(255,255,255,0.25)]">🔥 {stats.current_streak}</span>
             <span className="text-sm text-tx-text-muted">Longest: {stats.longest_streak} days</span>
           </div>
         </div>
@@ -188,6 +192,40 @@ export default function Dashboard() {
           <div className="relative z-10">
             <span className="font-mono text-5xl font-bold text-tx-secondary block mb-1 drop-shadow-[0_0_12px_rgba(123,97,255,0.4)]">{stats.logic_score}%</span>
             <span className="text-sm text-tx-text-muted">{stats.emotion_score}% still emotional. Work on it.</span>
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div variants={itemVariants} className="glass-card p-6 border border-tx-primary/10 bg-tx-primary/5">
+        <div className="flex flex-col lg:flex-row justify-between gap-4">
+          <div>
+            <p className="text-sm uppercase tracking-[0.35em] text-tx-text-secondary mb-3">{isPractice ? "Sandbox insights" : "Live mode overview"}</p>
+            <h2 className="font-syne text-2xl font-bold text-white">
+              {isPractice ? "Practice mode is your strategy gym" : "Real mode is your portfolio stage"}
+            </h2>
+            <p className="mt-3 text-tx-text-secondary max-w-2xl">
+              {isPractice
+                ? "Your practice trades do not affect capital, but your habits still matter. Treat this lab seriously."
+                : "Every decision here is considered on-chain style. Protect capital, document conviction, and review before you execute."}
+            </p>
+          </div>
+          <div className="rounded-3xl border border-tx-border p-4 bg-tx-card/90 text-sm text-tx-text-secondary">
+            <div className="font-semibold text-white mb-2">Mode difference</div>
+            <ul className="space-y-2">
+              {isPractice ? (
+                <>
+                  <li>✔ ₹10,00,000 virtual capital</li>
+                  <li>✔ No real risk, only discipline</li>
+                  <li>✔ Practice thesis, timing, and exit plan</li>
+                </>
+              ) : (
+                <>
+                  <li>✔ Actual capital accountability</li>
+                  <li>✔ Trade history shapes future risk</li>
+                  <li>✔ Review every decision after execution</li>
+                </>
+              )}
+            </ul>
           </div>
         </div>
       </motion.div>
@@ -265,7 +303,9 @@ export default function Dashboard() {
               {stats.recent_decisions.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-6 py-20 text-center text-tx-text-secondary">
-                    No decisions logged yet. Start by logging your first trade!
+                    {isPractice
+                      ? "No practice decisions yet. Use this mode to experiment and learn."
+                      : "No real trades yet. Log a decision and commit to your strategy."}
                   </td>
                 </tr>
               )}
@@ -331,7 +371,7 @@ export default function Dashboard() {
                   </div>
                   <Link 
                     href={`/review?id=${trade.id}`}
-                    className="px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-lg text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-tx-primary/10 hover:bg-tx-primary/20 text-tx-primary border border-tx-primary/30 rounded-lg text-sm font-medium transition-colors"
                   >
                     Review Now &rarr;
                   </Link>
@@ -346,7 +386,7 @@ export default function Dashboard() {
           </div>
           
           <div className="text-center italic text-sm text-tx-text-muted">
-            "Your portfolio called. It wants an explanation."
+            &quot;Your portfolio called. It&apos;s waiting for an explanation.&quot;
           </div>
         </div>
       </motion.div>

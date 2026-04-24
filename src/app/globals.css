@@ -2,11 +2,11 @@
 
 :root {
   /* Colors */
-  --bg-primary: #08080F;
-  --bg-secondary: #0F0F1A;
-  --bg-card: #13131F;
+  --bg-primary: #0B0500;
+  --bg-secondary: #120D00;
+  --bg-card: #1F1600;
   
-  --primary: #00FF94;
+  --primary: #FFB800;
   --secondary: #7B61FF;
   --accent: #FFB800;
   
@@ -17,8 +17,8 @@
   --text-secondary: #8B8B9E;
   --text-muted: #4A4A5E;
   
-  --border-color: rgba(255, 255, 255, 0.06);
-  --glass-bg: rgba(255, 255, 255, 0.03);
+  --border-color: rgba(255, 184, 0, 0.08);
+  --glass-bg: rgba(255, 184, 0, 0.06);
 }
 
 @theme {
