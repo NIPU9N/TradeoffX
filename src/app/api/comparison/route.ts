@@ -80,6 +80,7 @@ export async function GET() {
     if (!withStop.length) return 0;
     const honored = withStop.filter((d) => {
       const o = getOutcome(d);
+      if (!o) return false;
       return Number(o.exit_price) <= Number(d.stop_loss);
     }).length;
     return Math.round((honored / withStop.length) * 100);

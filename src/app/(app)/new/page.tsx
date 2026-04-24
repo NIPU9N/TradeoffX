@@ -9,7 +9,7 @@ import { TechnicalIndicators } from "@/components/TechnicalIndicators";
 import { createDecision, createPracticePosition, getPracticePortfolio } from "@/lib/api";
 import type { CreateDecisionInput, PracticePortfolio } from "@/types";
 import { useMode } from "@/context/ModeContext";
-import { KNOWN_ASSETS } from "@/lib/prices";
+import { KNOWN_ASSETS } from "@/lib/assets";
 import { DollarSign, Gamepad2, Search, TrendingUp, Wallet } from "lucide-react";
 
 const steps = ["1 The Trade", "2 The Why", "3 The Check"];

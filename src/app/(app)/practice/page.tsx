@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { motion } from "framer-motion";
 import { Gamepad2, Loader2, RefreshCw, TrendingDown, TrendingUp, Wallet, XCircle } from "lucide-react";
 import { closePracticePosition, getPracticePortfolio, getPracticePositions, resetPracticePortfolio } from "@/lib/api";
-import { KNOWN_ASSETS } from "@/lib/prices";
+import { KNOWN_ASSETS } from "@/lib/assets";
 import { cn } from "@/lib/utils";
 
 type Portfolio = {
