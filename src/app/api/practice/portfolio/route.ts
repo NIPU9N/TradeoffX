@@ -18,8 +18,30 @@ export async function GET() {
     .limit(1)
     .single();
 
-  if (portfolioError || !portfolio) {
-    return NextResponse.json({ error: "Practice portfolio not found" }, { status: 404 });
+  let activePortfolio = portfolio;
+  if (!activePortfolio) {
+    if (portfolioError && !portfolioError.message?.includes("Result contains 0 rows")) {
+      return NextResponse.json({ error: portfolioError.message }, { status: 500 });
+    }
+
+    const { data: createdPortfolio, error: createError } = await supabase
+      .from("practice_portfolio")
+      .insert({
+        user_id: user.id,
+        virtual_capital: 1000000,
+        current_value: 1000000,
+        total_return_percent: 0,
+        total_return_amount: 0,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      return NextResponse.json({ error: createError.message }, { status: 500 });
+    }
+
+    activePortfolio = createdPortfolio;
   }
 
   const { data: openPositions, error: positionsError } = await supabase
@@ -35,10 +57,10 @@ export async function GET() {
   const deployedCapital = (openPositions || []).reduce((sum, p) => sum + Number(p.investment_amount || 0), 0);
   const openCurrentValue = (openPositions || []).reduce((sum, p) => sum + Number(p.current_value || 0), 0);
   const unrealizedPnL = openCurrentValue - deployedCapital;
-  const freeCapital = Number(portfolio.virtual_capital) - deployedCapital;
+  const freeCapital = Number(activePortfolio.virtual_capital) - deployedCapital;
 
   return NextResponse.json({
-    portfolio,
+    portfolio: activePortfolio,
     metrics: {
       deployed_capital: deployedCapital,
       free_capital: Math.max(0, freeCapital),

@@ -19,16 +19,17 @@ export async function POST() {
 
   const { data: portfolio, error: updateError } = await supabase
     .from("practice_portfolio")
-    .update({
-      virtual_capital: 1000000,
-      current_value: 1000000,
-      total_return_percent: 0,
-      total_return_amount: 0,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", user.id)
-    .order("updated_at", { ascending: false })
-    .limit(1)
+    .upsert(
+      {
+        user_id: user.id,
+        virtual_capital: 1000000,
+        current_value: 1000000,
+        total_return_percent: 0,
+        total_return_amount: 0,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" }
+    )
     .select()
     .single();
 

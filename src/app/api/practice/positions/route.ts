@@ -44,8 +44,30 @@ export async function POST(request: Request) {
     .limit(1)
     .single();
 
-  if (portfolioError || !portfolio) {
-    return NextResponse.json({ error: "Practice portfolio not found" }, { status: 404 });
+  let activePortfolio = portfolio;
+  if (!activePortfolio) {
+    if (portfolioError && !portfolioError.message?.includes("Result contains 0 rows")) {
+      return NextResponse.json({ error: portfolioError.message }, { status: 500 });
+    }
+
+    const { data: createdPortfolio, error: createError } = await supabase
+      .from("practice_portfolio")
+      .insert({
+        user_id: user.id,
+        virtual_capital: 1000000,
+        current_value: 1000000,
+        total_return_percent: 0,
+        total_return_amount: 0,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      return NextResponse.json({ error: createError.message }, { status: 500 });
+    }
+
+    activePortfolio = createdPortfolio;
   }
 
   // 2. Check available capital
@@ -60,7 +82,7 @@ export async function POST(request: Request) {
   }
 
   const totalDeployed = (openPositions ?? []).reduce((sum, p) => sum + p.investment_amount, 0);
-  const freeCapital = portfolio.virtual_capital - totalDeployed;
+  const freeCapital = activePortfolio.virtual_capital - totalDeployed;
 
   if (investment_amount > freeCapital) {
     return NextResponse.json({
@@ -94,7 +116,7 @@ export async function POST(request: Request) {
 
   // 4. Update portfolio totals
   await supabase.from("practice_portfolio").update({
-    current_value: portfolio.virtual_capital,
+    current_value: activePortfolio.virtual_capital,
     updated_at: new Date().toISOString(),
   }).eq("user_id", user.id);
 
