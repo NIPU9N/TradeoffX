@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import type { Decision } from "@/types";
 import Link from "next/link";
 import { getDecisions } from "@/lib/api";
+import { useMode } from "@/context/ModeContext";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -30,12 +31,13 @@ export default function MyDecisions() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const { mode } = useMode();
 
   useEffect(() => {
     async function loadData() {
       try {
         setIsLoading(true);
-        const filterParams: { status?: string } = {};
+        const filterParams: { status?: string, mode?: string } = { mode };
         if (statusFilter !== "All") {
           filterParams.status = statusFilter.toLowerCase().replace(" ", "_");
         }
@@ -48,7 +50,7 @@ export default function MyDecisions() {
       }
     }
     loadData();
-  }, [statusFilter]);
+  }, [statusFilter, mode]);
 
   const filteredDecisions = decisions.filter(d =>
     d.asset_name.toLowerCase().includes(searchQuery.toLowerCase())

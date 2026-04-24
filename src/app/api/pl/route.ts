@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -9,11 +9,15 @@ export async function GET() {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const mode = searchParams.get("mode") || "real";
+
   // Fetch all decisions with their outcomes
   const { data: decisions, error } = await supabase
     .from("decisions")
     .select("*, outcome:outcomes(*)")
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .eq("mode", mode);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

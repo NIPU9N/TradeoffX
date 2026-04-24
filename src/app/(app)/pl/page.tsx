@@ -28,6 +28,7 @@ import {
   Area
 } from "recharts";
 import { cn } from "@/lib/utils";
+import { useMode } from "@/context/ModeContext";
 
 interface PLSummary {
   total_pnl: number;
@@ -87,12 +88,13 @@ export default function ProfitAndLoss() {
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { mode } = useMode();
 
   useEffect(() => {
     async function loadData() {
       try {
         setIsLoading(true);
-        const res = await fetch("/api/pl");
+        const res = await fetch(`/api/pl?mode=${mode}`);
         if (!res.ok) throw new Error("Failed to load P&L data");
         const json = await res.json();
         setData(json);
@@ -103,7 +105,7 @@ export default function ProfitAndLoss() {
       }
     }
     loadData();
-  }, []);
+  }, [mode]);
 
   if (isLoading) {
     return (

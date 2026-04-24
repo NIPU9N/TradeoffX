@@ -7,12 +7,14 @@ import { cn } from "@/lib/utils";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Decision } from "@/types";
+import { useMode } from "@/context/ModeContext";
 
 // ── ReviewContent (inner, needs useSearchParams) ────────────────────────────
 function ReviewContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const decisionId = searchParams.get("id");
+  const { mode } = useMode();
 
   const [decision, setDecision] = useState<Decision | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,7 +39,7 @@ function ReviewContent() {
       try {
         if (!decisionId) {
           // Fetch pending reviews if no specific decision is selected
-          const res = await fetch('/api/dashboard');
+          const res = await fetch(`/api/dashboard?mode=${mode}`);
           if (!res.ok) throw new Error("Failed to load pending reviews");
           const json = await res.json();
           setPendingReviews(json.pending_reviews || []);
@@ -55,7 +57,7 @@ function ReviewContent() {
       }
     }
     load();
-  }, [decisionId]);
+  }, [decisionId, mode]);
 
   const handleSubmit = async () => {
     if (!decisionId) return;

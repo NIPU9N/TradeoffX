@@ -35,20 +35,15 @@ export async function POST(request: Request) {
 
   const investment_amount = quantity * entry_price;
 
-  // 1. Get current portfolio
-  const { data: portfolio, error: portfolioError } = await supabase
+  const { data: portfolio } = await supabase
     .from("practice_portfolio")
     .select("*")
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false })
-    .limit(1)
-    .single();
+    .maybeSingle();
 
   let activePortfolio = portfolio;
   if (!activePortfolio) {
-    if (portfolioError && !portfolioError.message?.includes("Result contains 0 rows")) {
-      return NextResponse.json({ error: portfolioError.message }, { status: 500 });
-    }
 
     const { data: createdPortfolio, error: createError } = await supabase
       .from("practice_portfolio")
