@@ -2,13 +2,16 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 // GET /api/dashboard — aggregated stats for the logged-in user
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
+
+  const { searchParams } = new URL(request.url);
+  const mode = searchParams.get("mode") || "real";
 
   // Fetch profile
   const { data: profile } = await supabase
@@ -17,11 +20,12 @@ export async function GET() {
     .eq("id", user.id)
     .single();
 
-  // Fetch all decisions
+  // Fetch all decisions for this mode
   const { data: decisions } = await supabase
     .from("decisions")
     .select("*, outcome:outcomes(*)")
     .eq("user_id", user.id)
+    .eq("mode", mode)
     .order("created_at", { ascending: false });
 
   const allDecisions = decisions || [];
@@ -67,15 +71,18 @@ export async function GET() {
     : 0;
 
   // Bias breakdown
+  // Note: bias_tags doesn't have a mode field directly yet, but we can link it through decisions
   const { data: biasTags } = await supabase
     .from("bias_tags")
-    .select("bias_type")
+    .select("bias_type, decision:decisions(mode)")
     .eq("user_id", user.id);
+
+  const filteredBiasTags = (biasTags || []).filter(bt => (bt.decision as any)?.mode === mode);
 
   const biasBreakdown: Record<string, number> = {};
   
   // 1. Add from explicit tags
-  (biasTags || []).forEach((tag) => {
+  filteredBiasTags.forEach((tag) => {
     biasBreakdown[tag.bias_type] = (biasBreakdown[tag.bias_type] || 0) + 1;
   });
 
@@ -118,7 +125,7 @@ export async function GET() {
   );
 
   return NextResponse.json({
-    total_decisions: profile?.total_decisions || 0,
+    total_decisions: allDecisions.length,
     win_rate: winRate,
     current_streak: profile?.current_streak || 0,
     longest_streak: profile?.longest_streak || 0,
@@ -130,5 +137,6 @@ export async function GET() {
     bias_breakdown: biasBreakdown,
     best_performing_asset_type: sorted[0]?.[0] || "N/A",
     worst_performing_asset_type: sorted[sorted.length - 1]?.[0] || "N/A",
+    mode: mode as "real" | "practice"
   });
 }

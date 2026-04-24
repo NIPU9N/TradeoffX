@@ -25,6 +25,7 @@ export interface Profile {
 export interface Decision {
   id: string;
   user_id: string;
+  mode: "real" | "practice";
   // The Trade
   asset_name: string;
   asset_type: "stock" | "mutual_fund" | "crypto" | "gold" | "fd" | "other";
@@ -90,6 +91,7 @@ export interface Outcome {
 export interface Pattern {
   id: string;
   user_id: string;
+  mode: "real" | "practice";
   pattern_text: string;
   confidence_percent: number;
   based_on_decisions: number;
@@ -105,7 +107,63 @@ export interface BiasTag {
   created_at: string;
 }
 
+export interface PracticePortfolio {
+  id: string;
+  user_id: string;
+  virtual_capital: number;
+  current_value: number;
+  total_return_percent: number;
+  total_return_amount: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PracticePosition {
+  id: string;
+  user_id: string;
+  decision_id: string;
+  asset_name: string;
+  asset_type: "stock" | "mutual_fund" | "crypto" | "gold" | "fd" | "other";
+  quantity: number;
+  entry_price: number;
+  current_price: number;
+  investment_amount: number;
+  current_value: number;
+  return_amount: number;
+  return_percent: number;
+  status: "open" | "closed";
+  opened_at: string;
+  closed_at: string | null;
+  exit_price: number | null;
+}
+
+export interface MarketPrice {
+  id: string;
+  asset_symbol: string;
+  asset_name: string | null;
+  current_price: number;
+  previous_close: number | null;
+  change_percent: number | null;
+  last_updated: string;
+}
+
+export interface ModeComparison {
+  practice_win_rate: number;
+  real_win_rate: number;
+  practice_logic_driven: number;
+  real_logic_driven: number;
+  practice_avg_return: number;
+  real_avg_return: number;
+  practice_avg_confidence: number;
+  real_avg_confidence: number;
+  practice_fomo_trades: number;
+  real_fomo_trades: number;
+  practice_stop_loss_honor: number;
+  real_stop_loss_honor: number;
+}
+
 export interface DashboardStats {
+  mode: "real" | "practice";
   total_decisions: number;
   win_rate: number;
   current_streak: number;
@@ -157,6 +215,7 @@ export const createDecisionSchema = z.object({
   emotion: z.enum(["calm", "excited", "anxious", "fomo", "greedy", "uncertain"]),
   decision_type: z.enum(["logic", "mixed", "emotion"]),
   checklist_completed: z.boolean().default(false),
+  mode: z.enum(["real", "practice"]).default("real"),
 });
 
 export const createOutcomeSchema = z.object({

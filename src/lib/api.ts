@@ -17,8 +17,9 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 // ── Dashboard ──
-export async function fetchDashboard(): Promise<DashboardStats> {
-  return apiFetch<DashboardStats>("/api/dashboard");
+export async function fetchDashboard(mode?: string): Promise<DashboardStats> {
+  const qs = mode ? `?mode=${mode}` : "";
+  return apiFetch<DashboardStats>(`/api/dashboard${qs}`);
 }
 
 // ── Decisions ──
@@ -30,6 +31,7 @@ export async function getDecisions(filters?: {
   status?: string;
   asset_type?: string;
   emotion?: string;
+  mode?: string;
   limit?: number;
   offset?: number;
 }): Promise<{ decisions: Decision[]; total: number }> {
@@ -37,6 +39,7 @@ export async function getDecisions(filters?: {
   if (filters?.status) params.set("status", filters.status);
   if (filters?.asset_type) params.set("asset_type", filters.asset_type);
   if (filters?.emotion) params.set("emotion", filters.emotion);
+  if (filters?.mode) params.set("mode", filters.mode);
   if (filters?.limit) params.set("limit", String(filters.limit));
   if (filters?.offset) params.set("offset", String(filters.offset));
   const qs = params.toString();
@@ -64,9 +67,40 @@ export async function getOutcome(decisionId: string): Promise<{ outcome: Outcome
   return apiFetch(`/api/outcomes/${decisionId}`);
 }
 
+// ── Practice Mode ──
+export async function createPracticePosition(data: {
+  decision_id: string;
+  asset_name: string;
+  asset_type: string;
+  quantity: number;
+  entry_price: number;
+}) {
+  return apiFetch("/api/practice/positions", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function getPracticePositions(): Promise<{ positions: any[] }> {
+  return apiFetch("/api/practice/positions");
+}
+
+export async function getPracticePortfolio(): Promise<{ portfolio: any }> {
+  return apiFetch("/api/practice/portfolio");
+}
+
+export async function closePracticePosition(id: string, exit_price: number) {
+  return apiFetch(`/api/practice/positions/${id}/close`, {
+    method: "POST",
+    body: JSON.stringify({ exit_price }),
+  });
+}
+
+export async function resetPracticePortfolio() {
+  return apiFetch("/api/practice/portfolio/reset", { method: "POST" });
+}
+
 // ── Patterns ──
-export async function getPatterns(): Promise<{ patterns: Pattern[] }> {
-  return apiFetch("/api/patterns");
+export async function getPatterns(mode?: string): Promise<{ patterns: Pattern[] }> {
+  const qs = mode ? `?mode=${mode}` : "";
+  return apiFetch(`/api/patterns${qs}`);
 }
 
 export async function generatePatterns(): Promise<{ patterns: Pattern[] }> {

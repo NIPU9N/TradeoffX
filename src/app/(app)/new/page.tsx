@@ -6,8 +6,11 @@ import { cn } from "@/lib/utils";
 import { ChevronRight, Calendar, Info, Check, Sparkles, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { TechnicalIndicators } from "@/components/TechnicalIndicators";
-import { createDecision } from "@/lib/api";
-import type { CreateDecisionInput } from "@/types";
+import { createDecision, createPracticePosition, getPracticePortfolio } from "@/lib/api";
+import type { CreateDecisionInput, PracticePortfolio } from "@/types";
+import { useMode } from "@/context/ModeContext";
+import { KNOWN_ASSETS } from "@/lib/prices";
+import { DollarSign, Gamepad2, Search, TrendingUp, Wallet } from "lucide-react";
 
 const steps = ["1 The Trade", "2 The Why", "3 The Check"];
 
@@ -15,10 +18,15 @@ export default function NewDecision() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { mode, isPractice } = useMode();
+  const [showPracticeTrade, setShowPracticeTrade] = useState(false);
+  const [practicePortfolio, setPracticePortfolio] = useState<PracticePortfolio | null>(null);
+  const [createdDecisionId, setCreatedDecisionId] = useState<string | null>(null);
   const router = useRouter();
 
   const [formData, setFormData] = useState<CreateDecisionInput & { unit_price?: number, quantity?: number }>({
     asset_name: "",
+    mode: mode,
     asset_type: "stock",
     investment_amount: 0,
     unit_price: 0,
@@ -61,14 +69,47 @@ export default function NewDecision() {
       
       try {
         setIsSubmitting(true);
-        await createDecision(formData);
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 2000);
+        const { decision } = await createDecision({ ...formData, mode });
+        
+        if (isPractice) {
+          // Fetch portfolio to show in next step
+          try {
+            const { portfolio } = await getPracticePortfolio();
+            setPracticePortfolio(portfolio);
+          } catch (e) {
+            console.error("Failed to load practice portfolio", e);
+          }
+          setCreatedDecisionId(decision.id);
+          setIsSubmitting(false);
+          setShowPracticeTrade(true);
+        } else {
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 2000);
+        }
       } catch (err: any) {
         setError(err.message || "Failed to save decision");
         setIsSubmitting(false);
       }
+    }
+  };
+
+  const handleOpenPracticePosition = async () => {
+    if (!createdDecisionId || !formData.quantity || !formData.unit_price) return;
+    
+    try {
+      setIsSubmitting(true);
+      await createPracticePosition({
+        decision_id: createdDecisionId,
+        asset_name: formData.asset_name,
+        asset_type: formData.asset_type,
+        quantity: formData.quantity,
+        entry_price: formData.unit_price
+      });
+      router.push("/practice");
+    } catch (err: any) {
+      setError(err.message || "Failed to open practice position");
+      setIsSubmitting(false);
     }
   };
 
@@ -166,8 +207,80 @@ export default function NewDecision() {
         )}
       </div>
 
+      {/* Practice Trade Execution Step */}
+      {showPracticeTrade && (
+        <div className="absolute inset-0 bg-[#07070D]/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-gradient-to-b from-[#151524] to-[#0C0C14] border border-tx-primary/30 rounded-2xl p-8 max-w-lg w-full shadow-[0_0_40px_rgba(0,255,148,0.12)]"
+          >
+            <div className="flex items-center gap-3 mb-6 text-tx-primary">
+              <Gamepad2 className="w-8 h-8" />
+              <h2 className="font-syne text-2xl font-bold">Practice Trade Setup</h2>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="p-4 bg-tx-bg rounded-xl border border-tx-border">
+                <div className="text-sm text-tx-text-secondary mb-1">Available Virtual Capital</div>
+                <div className="font-mono text-2xl font-bold text-white">
+                  ₹{practicePortfolio?.virtual_capital.toLocaleString() || '0'}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-tx-text-secondary mb-2">Execute for: {formData.asset_name}</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs text-tx-text-muted mb-1">Unit Price (₹)</label>
+                    <input
+                      type="number"
+                      value={formData.unit_price || ""}
+                      onChange={(e) => updateFormData({ unit_price: parseFloat(e.target.value) || 0 })}
+                      className="w-full bg-tx-bg border border-tx-border rounded-xl px-4 py-3 font-mono text-white focus:outline-none focus:border-tx-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-tx-text-muted mb-1">Quantity</label>
+                    <input
+                      type="number"
+                      value={formData.quantity || ""}
+                      onChange={(e) => updateFormData({ quantity: parseFloat(e.target.value) || 0 })}
+                      className="w-full bg-tx-bg border border-tx-border rounded-xl px-4 py-3 font-mono text-white focus:outline-none focus:border-tx-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-tx-primary/10 border border-tx-primary/20 rounded-xl flex justify-between items-center">
+                <span className="text-sm text-tx-text-secondary">Required Capital:</span>
+                <span className="font-mono font-bold text-tx-primary text-lg">
+                  ₹{((formData.unit_price || 0) * (formData.quantity || 0)).toLocaleString()}
+                </span>
+              </div>
+
+              <div className="flex gap-4 mt-8">
+                <button
+                  onClick={() => router.push("/practice")}
+                  className="flex-1 px-4 py-3 rounded-xl border border-tx-border text-tx-text-secondary hover:text-white transition-colors"
+                >
+                  Skip Execution
+                </button>
+                <button
+                  onClick={handleOpenPracticePosition}
+                  disabled={isSubmitting || !formData.quantity || !formData.unit_price || ((formData.unit_price || 0) * (formData.quantity || 0)) > (practicePortfolio?.virtual_capital || 0)}
+                  className="flex-1 bg-tx-primary text-tx-bg font-bold px-4 py-3 rounded-xl hover:bg-tx-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Execute Trade
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Global Navigation Button */}
-      {!isSubmitting && (
+      {!isSubmitting && !showPracticeTrade && (
         <div className="mt-8 flex justify-end">
           <button
             onClick={handleNext}
@@ -192,17 +305,84 @@ function StepOne({ data, update }: { data: CreateDecisionInput & { unit_price?: 
     { label: "➕ Other", val: "other" },
   ];
 
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+  
+  const suggestions = KNOWN_ASSETS.filter(a => 
+    a.name.toLowerCase().includes(data.asset_name.toLowerCase()) || 
+    a.symbol.toLowerCase().includes(data.asset_name.toLowerCase())
+  ).slice(0, 5);
+
+  const handleAssetSelect = async (asset: typeof KNOWN_ASSETS[0]) => {
+    update({ 
+      asset_name: asset.name, 
+      asset_type: asset.type as any 
+    });
+    setSearchFocused(false);
+    
+    // Auto-fetch price
+    try {
+      setIsFetchingPrice(true);
+      const res = await fetch(`/api/prices?symbol=${asset.symbol}`);
+      const priceData = await res.json();
+      if (priceData && priceData.current_price) {
+        update({ unit_price: priceData.current_price });
+      }
+    } catch (e) {
+      console.error("Failed to fetch price", e);
+    } finally {
+      setIsFetchingPrice(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
-      <div>
+      <div className="relative">
         <label className="block text-xl font-syne font-bold mb-4">What are you buying?</label>
-        <input
-          type="text"
-          value={data.asset_name}
-          onChange={(e) => update({ asset_name: e.target.value })}
-          placeholder="e.g. Infosys, Nifty 50 Index Fund, Bitcoin"
-          className="w-full bg-tx-bg border border-tx-border rounded-xl px-6 py-4 text-lg text-white focus:outline-none focus:border-tx-primary focus:shadow-glow transition-all"
-        />
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-tx-text-muted w-5 h-5" />
+          <input
+            type="text"
+            value={data.asset_name}
+            onChange={(e) => update({ asset_name: e.target.value })}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+            placeholder="e.g. Infosys, Nifty 50 Index Fund, Bitcoin"
+            className="w-full bg-tx-bg border border-tx-border rounded-xl pl-12 pr-6 py-4 text-lg text-white focus:outline-none focus:border-tx-primary focus:shadow-glow transition-all"
+          />
+          {isFetchingPrice && (
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-tx-primary border-t-transparent rounded-full animate-spin" />
+          )}
+        </div>
+        
+        {/* Autocomplete Dropdown */}
+        <AnimatePresence>
+          {searchFocused && data.asset_name.length > 0 && suggestions.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute w-full mt-2 bg-[#0D0D17]/95 backdrop-blur-xl border border-tx-primary/20 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.45)] z-50 overflow-hidden"
+            >
+              <div className="px-4 py-2 text-[10px] uppercase tracking-wider text-tx-text-muted border-b border-tx-border/60">
+                Live market symbols
+              </div>
+              {suggestions.map(asset => (
+                <div 
+                  key={asset.symbol}
+                  onClick={() => handleAssetSelect(asset)}
+                  className="px-4 py-3 hover:bg-tx-primary/10 cursor-pointer flex justify-between items-center transition-colors border-b border-tx-border/50 last:border-0"
+                >
+                  <div>
+                    <span className="font-medium text-white block">{asset.name}</span>
+                    <span className="text-[10px] text-tx-text-muted uppercase">{asset.type.replace("_", " ")}</span>
+                  </div>
+                  <span className="text-xs font-mono text-tx-primary bg-tx-primary/10 px-2 py-1 rounded border border-tx-primary/20">{asset.symbol}</span>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div>

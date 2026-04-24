@@ -8,6 +8,7 @@ import { fetchDashboard } from "@/lib/api";
 import type { DashboardStats } from "@/types";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useMode } from "@/context/ModeContext";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -32,13 +33,14 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
+  const { mode, isPractice } = useMode();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadData = useCallback(async (silent = false) => {
     try {
       if (!silent) setIsLoading(true);
       else setIsRefreshing(true);
-      const data = await fetchDashboard();
+      const data = await fetchDashboard(mode);
       setStats(data);
       setError(null);
     } catch (err: any) {
@@ -47,10 +49,10 @@ export default function Dashboard() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [mode]);
 
   // Initial load
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData, mode]);
 
   // Auto-refresh when tab regains focus (after navigating back from logging a decision)
   useEffect(() => {
@@ -106,6 +108,9 @@ export default function Dashboard() {
               ? `You have ${stats.pending_reviews.length} decisions awaiting review. Don't ghost your portfolio.`
               : "All clear! Every trade is documented and reviewed."}
           </p>
+          <span className="inline-flex mt-3 px-3 py-1 rounded-full text-xs border border-tx-border bg-tx-card text-tx-text-secondary uppercase tracking-wider">
+            {isPractice ? "Practice Mode" : "Real Money Mode"}
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <button

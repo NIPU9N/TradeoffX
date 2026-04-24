@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Sparkles, Share, Brain, TrendingDown, TrendingUp, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Pattern } from "@/types";
+import { useMode } from "@/context/ModeContext";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -61,14 +62,15 @@ export default function PatternMirror() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { mode, isPractice } = useMode();
 
   useEffect(() => {
     async function loadData() {
       try {
         setIsLoading(true);
         const [patternsRes, mirrorRes] = await Promise.all([
-          fetch("/api/patterns"),
-          fetch("/api/mirror"),
+          fetch(`/api/patterns?mode=${mode}`),
+          fetch(`/api/mirror?mode=${mode}`),
         ]);
         const patternsJson = await patternsRes.json();
         const mirrorJson = await mirrorRes.json();
@@ -81,21 +83,21 @@ export default function PatternMirror() {
       }
     }
     loadData();
-  }, []);
+  }, [mode]);
 
   const handleGenerate = async () => {
     try {
       setIsGenerating(true);
       setError(null);
-      const genRes = await fetch("/api/patterns/generate", { method: "POST" });
+      const genRes = await fetch(`/api/patterns/generate?mode=${mode}`, { method: "POST" });
       if (!genRes.ok) {
         const errorData = await genRes.json().catch(() => ({}));
         throw new Error(errorData.error || `Generation failed with status ${genRes.status}`);
       }
       // Reload both patterns and stats
       const [patternsRes, mirrorRes] = await Promise.all([
-        fetch("/api/patterns"),
-        fetch("/api/mirror"),
+        fetch(`/api/patterns?mode=${mode}`),
+        fetch(`/api/mirror?mode=${mode}`),
       ]);
       const patternsJson = await patternsRes.json();
       const mirrorJson = await mirrorRes.json();
@@ -161,8 +163,11 @@ export default function PatternMirror() {
             Your Pattern Mirror
             <div className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-tx-secondary to-tx-primary rounded-full shadow-glow-purple"></div>
           </h1>
-          <div className="flex items-center gap-3 mt-4 justify-center md:justify-start">
+          <div className="flex items-center gap-3 mt-4 justify-center md:justify-start flex-wrap">
             <p className="text-tx-text-secondary">This is what your decisions reveal about you. No cap.</p>
+            <span className="px-2 py-1 bg-tx-card text-tx-text-secondary text-xs rounded-full border border-tx-border">
+              {isPractice ? "Practice Lens" : "Real Money Lens"}
+            </span>
             <span className="px-2 py-1 bg-tx-secondary/20 text-tx-secondary text-xs rounded-full border border-tx-secondary/30 flex items-center font-medium">
               <Sparkles className="w-3 h-3 mr-1" /> AI Powered
             </span>

@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 // GET /api/mirror — rich stats for the Pattern Mirror page
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -10,18 +10,15 @@ export async function GET() {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // Fetch profile
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const { searchParams } = new URL(request.url);
+  const mode = searchParams.get("mode") || "real";
 
   // Fetch all decisions with outcomes
   const { data: decisions } = await supabase
     .from("decisions")
     .select("*, outcome:outcomes(*)")
     .eq("user_id", user.id)
+    .eq("mode", mode)
     .order("created_at", { ascending: false });
 
   const all = decisions || [];
@@ -96,11 +93,13 @@ export async function GET() {
   // ── Bias breakdown from bias_tags ────────────────────────────────────────────
   const { data: biasTags } = await supabase
     .from("bias_tags")
-    .select("bias_type")
+    .select("bias_type, decision:decisions(mode)")
     .eq("user_id", user.id);
 
   const biasRaw: Record<string, number> = {};
-  (biasTags || []).forEach((tag) => {
+  (biasTags || [])
+    .filter((tag) => (tag.decision as { mode?: string } | null)?.mode === mode)
+    .forEach((tag) => {
     biasRaw[tag.bias_type] = (biasRaw[tag.bias_type] || 0) + 1;
   });
 
@@ -148,6 +147,7 @@ export async function GET() {
     : null;
 
   return NextResponse.json({
+    mode,
     total_decisions: total,
     this_month_decisions: thisMonthCount,
     decisions_change_pct: decisionsChangeVsLastMonth,

@@ -43,6 +43,9 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/decisions") ||
     request.nextUrl.pathname.startsWith("/review") ||
     request.nextUrl.pathname.startsWith("/mirror") ||
+    request.nextUrl.pathname.startsWith("/pl") ||
+    request.nextUrl.pathname.startsWith("/practice") ||
+    request.nextUrl.pathname.startsWith("/compare") ||
     request.nextUrl.pathname.startsWith("/settings");
 
   if (!user && isProtectedRoute) {

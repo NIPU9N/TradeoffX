@@ -16,6 +16,7 @@ export async function GET(request: Request) {
   const status = searchParams.get("status");
   const asset_type = searchParams.get("asset_type");
   const emotion = searchParams.get("emotion");
+  const mode = searchParams.get("mode");
   const limit = parseInt(searchParams.get("limit") || "20");
   const offset = parseInt(searchParams.get("offset") || "0");
 
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
   if (status) query = query.eq("status", status);
   if (asset_type) query = query.eq("asset_type", asset_type);
   if (emotion) query = query.eq("emotion", emotion);
+  if (mode) query = query.eq("mode", mode);
 
   const { data, error, count } = await query;
 
@@ -61,7 +63,11 @@ export async function POST(request: Request) {
   // Insert decision
   const { data: decision, error } = await supabase
     .from("decisions")
-    .insert({ ...parsed.data, user_id: user.id })
+    .insert({ 
+      ...parsed.data, 
+      user_id: user.id,
+      mode: parsed.data.mode || 'real'
+    })
     .select()
     .single();
 
