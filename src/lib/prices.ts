@@ -41,7 +41,8 @@ export async function fetchStockPrice(symbol: string): Promise<PriceData | null>
   // 2. Fetch from Yahoo Finance
   try {
     // Dynamic import to avoid issues with edge runtime
-    const yahooFinance = (await import("yahoo-finance2")).default;
+    const YahooFinance = (await import("yahoo-finance2")).default;
+    const yahooFinance = new YahooFinance({ suppressNotices: ['yahooSurvey'] });
     const quote = (await yahooFinance.quote(symbol)) as {
       regularMarketPrice?: number;
       regularMarketPreviousClose?: number;

@@ -431,8 +431,8 @@ export default function PracticePortfolioPage() {
           />
           <Card
             label="Unrealized P&L"
-            value={`${metrics.unrealized_pnl >= 0 ? "+" : "-"}₹${Math.abs(metrics.unrealized_pnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-            icon={metrics.unrealized_pnl >= 0 ? <TrendingUp className="w-5 h-5 text-tx-primary" /> : <TrendingDown className="w-5 h-5 text-tx-danger" />}
+            value={`${computedOpenPnL >= 0 ? "+" : "-"}₹${Math.abs(computedOpenPnL).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+            icon={computedOpenPnL >= 0 ? <TrendingUp className="w-5 h-5 text-tx-primary" /> : <TrendingDown className="w-5 h-5 text-tx-danger" />}
           />
         </div>
       )}
