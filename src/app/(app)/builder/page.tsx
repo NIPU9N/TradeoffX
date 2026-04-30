@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
-import { OptionLeg, calculateStrategyMetrics, generatePayoffCurve } from "@/lib/options";
+import { useEffect, useMemo, useState } from "react";
+import { Search, Loader2 } from "lucide-react";
+import { OptionLeg, calculateStrategyMetrics, generatePayoffCurve, OptionChainData } from "@/lib/options";
 import { StrategyLegManager } from "@/components/StrategyLegManager";
 import { StrategyPayoffChart } from "@/components/StrategyPayoffChart";
 import { KNOWN_ASSETS } from "@/lib/assets";
@@ -13,6 +13,8 @@ export default function BuilderPage() {
   const [underlyingPrice, setUnderlyingPrice] = useState(10000); // Default placeholder
   const [assetSearch, setAssetSearch] = useState("");
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
+  const [optionChain, setOptionChain] = useState<OptionChainData | null>(null);
+  const [isFetchingChain, setIsFetchingChain] = useState(false);
 
   const stockSuggestions = useMemo(() => {
     const query = assetSearch.trim().toLowerCase();
@@ -22,11 +24,32 @@ export default function BuilderPage() {
     ).slice(0, 5);
   }, [assetSearch]);
 
+  useEffect(() => {
+    if (!selectedAsset) return;
+
+    const fetchChain = async () => {
+      setIsFetchingChain(true);
+      try {
+        const response = await fetch(`/api/options/chain?symbol=${selectedAsset}`);
+        const data: OptionChainData = await response.json();
+        setOptionChain(data);
+        if (data.underlyingValue > 0) {
+          setUnderlyingPrice(data.underlyingValue);
+        }
+      } catch (err) {
+        console.error("Failed to fetch option chain", err);
+      } finally {
+        setIsFetchingChain(false);
+      }
+    };
+
+    fetchChain();
+  }, [selectedAsset]);
+
   const selectAsset = (asset: { symbol: string, name: string }) => {
     setSelectedAsset(asset.symbol);
     setAssetSearch(asset.name);
-    // Optionally fetch live price here later
-    setUnderlyingPrice(10000); // Reset or keep a default for now until real fetch
+    setLegs([]); // Reset legs when changing asset
   };
 
   const payoffData = useMemo(() => generatePayoffCurve(legs, underlyingPrice, 0.15), [legs, underlyingPrice]);
@@ -99,8 +122,28 @@ export default function BuilderPage() {
           </div>
 
           {/* Legs Manager */}
-          <div className="glass-card p-6 border border-tx-border">
-            <StrategyLegManager legs={legs} onChange={setLegs} currentPrice={underlyingPrice} />
+          <div className="glass-card p-6 border border-tx-border relative overflow-hidden">
+            {isFetchingChain && (
+              <div className="absolute inset-0 z-20 bg-tx-bg/80 backdrop-blur-sm flex flex-col items-center justify-center border border-tx-primary/30 rounded-xl">
+                <Loader2 className="w-8 h-8 text-tx-primary animate-spin mb-3" />
+                <p className="text-sm font-semibold text-white">Fetching Live Option Chain...</p>
+                <p className="text-xs text-tx-text-secondary mt-1 max-w-xs text-center">Connecting to NSE India for real-time premiums</p>
+              </div>
+            )}
+            
+            {optionChain?.isMocked && (
+              <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-500 text-xs flex items-start gap-2">
+                <span className="text-lg leading-none">⚠️</span>
+                <p>NSE API is currently blocking the live request. Using generated mock option chain data for testing.</p>
+              </div>
+            )}
+
+            <StrategyLegManager 
+              legs={legs} 
+              onChange={setLegs} 
+              currentPrice={underlyingPrice} 
+              optionChain={optionChain} 
+            />
           </div>
         </div>
 

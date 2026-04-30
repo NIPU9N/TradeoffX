@@ -18,6 +18,28 @@ export interface StrategyMetrics {
   riskReward: string;
 }
 
+export interface OptionStrikeData {
+  strikePrice: number;
+  ce: {
+    lastPrice: number;
+    openInterest: number;
+    impliedVolatility: number;
+  };
+  pe: {
+    lastPrice: number;
+    openInterest: number;
+    impliedVolatility: number;
+  };
+}
+
+export interface OptionChainData {
+  symbol: string;
+  underlyingValue: number;
+  timestamp: string;
+  isMocked: boolean;
+  strikes: OptionStrikeData[];
+}
+
 export function calculatePayoff(legs: OptionLeg[], underlyingPrice: number): number {
   return legs.reduce((totalPnl, leg) => {
     let intrinsicValue = 0;
