@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
-// Cache duration in milliseconds (15 minutes)
-const CACHE_DURATION_MS = 15 * 60 * 1000;
+// Cache duration in milliseconds (10 seconds for real-time updates)
+const CACHE_DURATION_MS = 10 * 1000;
 
 export interface PriceData {
   symbol: string;
