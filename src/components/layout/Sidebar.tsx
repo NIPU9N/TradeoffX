@@ -17,7 +17,8 @@ import {
   Gamepad2,
   DollarSign,
   BarChart3,
-  Wallet
+  Wallet,
+  Layers
 } from "lucide-react";
 import { getProfile } from "@/lib/api";
 import type { Profile } from "@/types";
@@ -73,6 +74,7 @@ export function Sidebar() {
     { name: "My Decisions", href: "/decisions", icon: BookOpen },
     { name: "P&L Analysis", href: "/pl", icon: BarChart3 },
     ...(isPractice ? [{ name: "Practice Portfolio", href: "/practice", icon: Wallet }] : []),
+    { name: "Strategy Builder", href: "/builder", icon: Layers },
     { name: "Outcome Review", href: "/review", icon: CheckCircle },
     { name: "Pattern Mirror", href: "/mirror", icon: Brain },
     { name: "My Progress", href: "/compare", icon: GitCompare, pro: true },
