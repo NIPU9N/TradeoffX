@@ -68,12 +68,15 @@ export function StrategyPayoffChart({ data, className, currentPrice }: StrategyP
           <Tooltip 
             contentStyle={{ backgroundColor: "#121212", borderColor: "#2a2a2a", borderRadius: "12px", color: "#fff" }}
             itemStyle={{ color: "#fff" }}
-            formatter={(value: number) => [
-              <span key="1" className={value >= 0 ? "text-emerald-500 font-bold" : "text-red-500 font-bold"}>
-                {value >= 0 ? "+" : ""}₹{value.toFixed(2)}
-              </span>,
-              "P&L",
-            ]}
+            formatter={(value: any) => {
+              const numVal = Number(value) || 0;
+              return [
+                <span key="1" className={numVal >= 0 ? "text-emerald-500 font-bold" : "text-red-500 font-bold"}>
+                  {numVal >= 0 ? "+" : ""}₹{numVal.toFixed(2)}
+                </span>,
+                "P&L",
+              ];
+            }}
             labelFormatter={(label) => `Underlying Price: ₹${label}`}
           />
           <ReferenceLine y={0} stroke="#444" strokeWidth={2} />

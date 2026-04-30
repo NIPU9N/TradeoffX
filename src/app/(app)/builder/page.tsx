@@ -113,13 +113,13 @@ export default function BuilderPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl bg-tx-bg/50 border border-tx-border/50">
                   <div className="text-[10px] uppercase tracking-[0.2em] text-tx-text-secondary mb-1">Max Profit</div>
-                  <div className={cn("font-mono text-lg font-bold", metrics.maxProfit > 0 || metrics.maxProfit === "Unlimited" ? "text-emerald-500" : "")}>
+                  <div className={cn("font-mono text-lg font-bold", metrics.maxProfit === "Unlimited" || (typeof metrics.maxProfit === "number" && metrics.maxProfit > 0) ? "text-emerald-500" : "")}>
                     {metrics.maxProfit === "Unlimited" ? "Unlimited" : `₹${metrics.maxProfit}`}
                   </div>
                 </div>
                 <div className="p-4 rounded-xl bg-tx-bg/50 border border-tx-border/50">
                   <div className="text-[10px] uppercase tracking-[0.2em] text-tx-text-secondary mb-1">Max Loss</div>
-                  <div className={cn("font-mono text-lg font-bold", metrics.maxLoss < 0 || metrics.maxLoss === "Unlimited" ? "text-red-500" : "")}>
+                  <div className={cn("font-mono text-lg font-bold", metrics.maxLoss === "Unlimited" || (typeof metrics.maxLoss === "number" && metrics.maxLoss < 0) ? "text-red-500" : "")}>
                     {metrics.maxLoss === "Unlimited" ? "Unlimited" : `₹${Math.abs(metrics.maxLoss as number)}`}
                   </div>
                 </div>
