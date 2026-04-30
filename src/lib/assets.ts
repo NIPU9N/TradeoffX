@@ -5,6 +5,13 @@ export type KnownAsset = {
 };
 
 export const KNOWN_ASSETS: KnownAsset[] = [
+  // Indices
+  { name: "Nifty 50", symbol: "NIFTY", type: "other" },
+  { name: "Bank Nifty", symbol: "BANKNIFTY", type: "other" },
+  { name: "Fin Nifty", symbol: "FINNIFTY", type: "other" },
+  { name: "Midcap Nifty", symbol: "MIDCPNIFTY", type: "other" },
+  { name: "Sensex", symbol: "SENSEX", type: "other" },
+
   {
     "name": "Reliance Industries Ltd",
     "symbol": "RELIANCE.NS",

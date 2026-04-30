@@ -1,55 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OptionChainData, OptionStrikeData } from "@/lib/options";
 
+// Known index configurations: [underlyingValue, strikeStep]
+const INDEX_CONFIG: Record<string, [number, number]> = {
+  NIFTY:      [24500, 50],
+  BANKNIFTY:  [52000, 100],
+  FINNIFTY:   [23000, 50],
+  MIDCPNIFTY: [12000, 25],
+  SENSEX:     [80000, 100],
+};
+
 // Helper to generate a realistic mock option chain if NSE blocks us
 function generateMockChain(symbol: string): OptionChainData {
-  // Approximate base values
-  const underlyingValue = symbol === "BANKNIFTY" ? 48000 : symbol === "NIFTY" ? 22000 : 1000;
-  const strikeStep = symbol === "BANKNIFTY" ? 100 : symbol === "NIFTY" ? 50 : 10;
-  
+  // Normalize the symbol — strip .NS, uppercase
+  const normalized = symbol.replace('.NS', '').toUpperCase();
+
+  const config = INDEX_CONFIG[normalized];
+  const underlyingValue = config ? config[0] : 1000;
+  const strikeStep = config ? config[1] : Math.round(underlyingValue * 0.005); // 0.5% of price for stocks
+
   const strikes: OptionStrikeData[] = [];
-  
-  // Generate 20 strikes around the ATM (At The Money) strike
   const atmStrike = Math.round(underlyingValue / strikeStep) * strikeStep;
-  const startStrike = atmStrike - (strikeStep * 10);
-  
+  const startStrike = atmStrike - strikeStep * 10;
+
   for (let i = 0; i <= 20; i++) {
-    const currentStrike = startStrike + (i * strikeStep);
-    
-    // Simple option pricing approximation based on distance from ATM
+    const currentStrike = startStrike + i * strikeStep;
     const distanceFromAtm = currentStrike - underlyingValue;
-    
-    // Intrinsic value
     const callIntrinsic = Math.max(0, underlyingValue - currentStrike);
     const putIntrinsic = Math.max(0, currentStrike - underlyingValue);
-    
-    // Time value (bell curve centered at ATM)
     const timeValue = Math.exp(-Math.pow(distanceFromAtm / (strikeStep * 5), 2)) * (underlyingValue * 0.01);
-    
-    // Add some random noise
     const noise = () => 1 + (Math.random() * 0.1 - 0.05);
-    
+
     strikes.push({
       strikePrice: currentStrike,
       ce: {
         lastPrice: Number(((callIntrinsic + timeValue) * noise()).toFixed(2)),
         openInterest: Math.floor(Math.random() * 50000),
-        impliedVolatility: Number((12 + Math.random() * 5).toFixed(2))
+        impliedVolatility: Number((12 + Math.random() * 5).toFixed(2)),
       },
       pe: {
         lastPrice: Number(((putIntrinsic + timeValue) * noise()).toFixed(2)),
         openInterest: Math.floor(Math.random() * 50000),
-        impliedVolatility: Number((12 + Math.random() * 5).toFixed(2))
-      }
+        impliedVolatility: Number((12 + Math.random() * 5).toFixed(2)),
+      },
     });
   }
 
   return {
-    symbol,
+    symbol: normalized,
     underlyingValue,
     timestamp: new Date().toISOString(),
     isMocked: true,
-    strikes
+    strikes,
   };
 }
 
@@ -61,8 +63,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
   }
 
-  // Remove .NS suffix if present (e.g. RELIANCE.NS -> RELIANCE)
-  symbol = symbol.replace('.NS', '');
+  // Normalize: remove .NS suffix and uppercase (e.g. 'RELIANCE.NS' -> 'RELIANCE', 'nifty' -> 'NIFTY')
+  symbol = symbol.replace('.NS', '').toUpperCase();
 
   try {
     // Step 1: Get cookies
@@ -79,7 +81,7 @@ export async function GET(request: NextRequest) {
     const cookies = setCookieHeaders ? setCookieHeaders.split(',').map(c => c.split(';')[0]).join('; ') : '';
     
     // Step 2: Fetch option chain
-    const isIndex = symbol === "NIFTY" || symbol === "BANKNIFTY" || symbol === "FINNIFTY" || symbol === "MIDCPNIFTY";
+    const isIndex = symbol in INDEX_CONFIG;
     const url = isIndex 
       ? `https://www.nseindia.com/api/option-chain-indices?symbol=${encodeURIComponent(symbol)}`
       : `https://www.nseindia.com/api/option-chain-equities?symbol=${encodeURIComponent(symbol)}`;
