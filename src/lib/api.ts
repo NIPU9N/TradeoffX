@@ -1,4 +1,4 @@
-import type { Decision, Outcome, Pattern, Profile, DashboardStats, CreateDecisionInput, CreateOutcomeInput, UpdateProfileInput } from "@/types";
+import type { Decision, Outcome, Pattern, Profile, DashboardStats, CreateDecisionInput, CreateOutcomeInput, UpdateProfileInput, WatchlistItem, CreateWatchlistInput } from "@/types";
 
 const API_BASE = "";
 
@@ -122,4 +122,25 @@ export async function getProfile(): Promise<{ profile: Profile }> {
 
 export async function updateProfile(data: UpdateProfileInput): Promise<{ profile: Profile }> {
   return apiFetch("/api/profile", { method: "PATCH", body: JSON.stringify(data) });
+}
+
+// ── Watchlist ──
+export async function getWatchlist(filters?: { mode?: string; status?: string }): Promise<{ items: WatchlistItem[] }> {
+  const params = new URLSearchParams();
+  if (filters?.mode) params.set("mode", filters.mode);
+  if (filters?.status) params.set("status", filters.status);
+  const qs = params.toString();
+  return apiFetch(`/api/watchlist${qs ? `?${qs}` : ""}`);
+}
+
+export async function createWatchlistItem(data: CreateWatchlistInput & { mode: string }): Promise<{ item: WatchlistItem }> {
+  return apiFetch("/api/watchlist", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateWatchlistItem(id: string, updates: Partial<WatchlistItem>): Promise<{ item: WatchlistItem }> {
+  return apiFetch(`/api/watchlist/${id}`, { method: "PATCH", body: JSON.stringify(updates) });
+}
+
+export async function deleteWatchlistItem(id: string): Promise<{ message: string }> {
+  return apiFetch(`/api/watchlist/${id}`, { method: "DELETE" });
 }

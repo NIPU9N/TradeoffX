@@ -147,6 +147,42 @@ export interface MarketPrice {
   last_updated: string;
 }
 
+export interface WatchlistItem {
+  id: string;
+  user_id: string;
+  mode: "real" | "practice";
+  asset_name: string;
+  asset_symbol: string | null;
+  asset_type: string;
+  price_when_added: number | null;
+  current_price: number | null;
+  watching_thesis: string;
+  what_would_make_me_buy: string | null;
+  what_would_make_me_skip: string | null;
+  target_entry_price: number | null;
+  max_entry_price: number | null;
+  review_date: string | null;
+  status: "watching" | "bought" | "skipped";
+  action_taken: string | null;
+  what_i_learned: string | null;
+  watched_since: string;
+  action_taken_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateWatchlistInput {
+  asset_name: string;
+  asset_symbol?: string;
+  asset_type: string;
+  watching_thesis: string;
+  what_would_make_me_buy?: string;
+  what_would_make_me_skip?: string;
+  target_entry_price?: number | null;
+  max_entry_price?: number | null;
+  review_date?: string | null;
+}
+
 export interface ModeComparison {
   practice_win_rate: number;
   real_win_rate: number;

@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Brain, ArrowUpRight, ArrowDownRight, ChevronRight, AlertCircle, Camera, RefreshCw, Loader2 } from "lucide-react";
+import { BookOpen, Brain, ArrowUpRight, ArrowDownRight, ChevronRight, AlertCircle, Camera, RefreshCw, Loader2, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fetchDashboard } from "@/lib/api";
-import type { DashboardStats } from "@/types";
+import { fetchDashboard, getWatchlist } from "@/lib/api";
+import type { DashboardStats, WatchlistItem } from "@/types";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useMode } from "@/context/ModeContext";
@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
 
   const router = useRouter();
   const { mode, isPractice } = useMode();
@@ -61,6 +62,11 @@ export default function Dashboard() {
   useEffect(() => {
     void (async () => { await loadData(); })();
   }, [loadData]);
+
+  // Load watchlist counts
+  useEffect(() => {
+    getWatchlist({ mode }).then(({ items }) => setWatchlistItems(items)).catch(() => {});
+  }, [mode]);
 
   // Auto-refresh when tab regains focus (after navigating back from logging a decision)
   useEffect(() => {
@@ -315,79 +321,88 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Bottom Section */}
-      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Watchlist Widget */}
+        <Link href="/watchlist" className="glass-card p-6 border border-tx-border hover:border-tx-primary/30 transition-colors group block">
+          <div className="flex justify-between items-start mb-4">
+            <h3 className="font-syne text-lg font-bold flex items-center gap-2">
+              <Eye className={cn("w-5 h-5", isPractice ? "text-tx-primary" : "text-yellow-400")} /> Watchlist
+            </h3>
+            <ChevronRight className="w-4 h-4 text-tx-text-muted group-hover:text-white transition-colors" />
+          </div>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            {[
+              { label: "Watching", count: watchlistItems.filter(i => i.status === "watching").length, color: "text-blue-400" },
+              { label: "Bought", count: watchlistItems.filter(i => i.status === "bought").length, color: "text-emerald-400" },
+              { label: "Skipped", count: watchlistItems.filter(i => i.status === "skipped").length, color: "text-red-400" },
+            ].map(s => (
+              <div key={s.label} className="text-center">
+                <div className={cn("font-mono text-2xl font-bold", s.color)}>{s.count}</div>
+                <div className="text-[10px] text-tx-text-muted mt-0.5">{s.label}</div>
+              </div>
+            ))}
+          </div>
+          {(() => {
+            const due = watchlistItems.filter(i => i.status === "watching" && i.review_date && new Date(i.review_date) <= new Date());
+            return due.length > 0 ? (
+              <div className="flex items-center gap-2 px-3 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <AlertCircle className="w-3.5 h-3.5 text-yellow-400" />
+                <span className="text-xs text-yellow-400 font-medium">{due.length} review{due.length > 1 ? "s" : ""} overdue</span>
+              </div>
+            ) : (
+              <p className="text-xs text-tx-text-muted italic">No reviews overdue.</p>
+            );
+          })()}
+        </Link>
+
         {/* Biggest Bias Card */}
-        <div className="glass-card p-8 flex flex-col justify-between relative overflow-hidden">
+        <div className="glass-card p-8 flex flex-col justify-between relative overflow-hidden md:col-span-1">
           <div>
-            <h3 className="font-syne text-xl font-bold mb-6">Your Biggest Bias Right Now</h3>
+            <h3 className="font-syne text-xl font-bold mb-4">Your Biggest Bias</h3>
             <div className={cn(
               "font-syne font-bold text-tx-danger mb-4 drop-shadow-[0_0_15px_rgba(255,77,77,0.3)] uppercase break-words",
-              stats.top_bias.length > 10 ? "text-4xl tracking-normal" : "text-6xl tracking-[0.1em]"
+              stats!.top_bias.length > 10 ? "text-3xl tracking-normal" : "text-5xl tracking-[0.1em]"
             )}>
-              {stats.top_bias === "none" ? "CLEAN" : stats.top_bias.split('_').join(' ')}
+              {stats!.top_bias === "none" ? "CLEAN" : stats!.top_bias.split('_').join(' ')}
             </div>
-            <p className="text-tx-text-secondary mb-6">
-              {stats.top_bias === "none" 
+            <p className="text-tx-text-secondary text-sm mb-4">
+              {stats!.top_bias === "none"
                 ? "No behavioral leaks detected yet. Solid."
-                : `Detected in ${stats.bias_breakdown[stats.top_bias] || 0} of your recent trades.`}
+                : `Detected in ${stats!.bias_breakdown[stats!.top_bias] || 0} of your recent trades.`}
             </p>
-            
-            <div className="space-y-2 mb-8">
-              <div className="flex justify-between text-xs text-tx-text-secondary mb-1">
-                <span className="uppercase">{stats.top_bias === "none" ? "Logic" : stats.top_bias.split('_').join(' ')}</span>
-                <span>Other Factors</span>
-              </div>
-              <div className="h-2 w-full bg-tx-bg rounded-full overflow-hidden flex">
-                <div className="bg-tx-danger h-full" style={{ width: `${stats.emotion_score}%` }}></div>
-                <div className="bg-tx-text-muted h-full" style={{ width: `${stats.logic_score}%` }}></div>
-              </div>
-            </div>
           </div>
-          
-          <div className="flex items-center gap-2 text-tx-text-muted bg-tx-bg p-4 rounded-xl border border-tx-border/50">
-            <Camera className="w-5 h-5 text-tx-danger" />
-            <span className="italic text-sm">Caught in 4K. Again. 📸</span>
+          <div className="flex items-center gap-2 text-tx-text-muted bg-tx-bg p-3 rounded-xl border border-tx-border/50">
+            <Camera className="w-4 h-4 text-tx-danger" />
+            <span className="italic text-xs">Caught in 4K. Again. 📸</span>
           </div>
-          
-          <div className="absolute top-0 right-0 w-64 h-64 bg-tx-danger opacity-[0.03] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+          <div className="absolute top-0 right-0 w-48 h-48 bg-tx-danger opacity-[0.03] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         </div>
 
         {/* Needs Attention Card */}
-        <div className="glass-card p-8 flex flex-col justify-between">
+        <div className="glass-card p-6 flex flex-col justify-between">
           <div>
-            <h3 className="font-syne text-xl font-bold mb-6 flex items-center">
-              <AlertCircle className="w-5 h-5 text-orange-400 mr-2" />
-              Awaiting Review
+            <h3 className="font-syne text-lg font-bold mb-4 flex items-center">
+              <AlertCircle className="w-5 h-5 text-orange-400 mr-2" /> Awaiting Review
             </h3>
-            
-            <div className="space-y-4 mb-8">
-              {stats.pending_reviews.slice(0, 3).map((trade) => (
-                <div key={trade.id} className="flex justify-between items-center p-4 bg-tx-bg/50 border border-tx-border rounded-xl">
+            <div className="space-y-3 mb-4">
+              {stats!.pending_reviews.slice(0, 3).map((trade) => (
+                <div key={trade.id} className="flex justify-between items-center p-3 bg-tx-bg/50 border border-tx-border rounded-xl">
                   <div>
-                    <p className="font-bold font-syne">{trade.asset_name}</p>
-                    <p className="text-xs text-tx-text-secondary capitalize">
-                      <span className="text-[10px] text-tx-text-muted uppercase whitespace-nowrap">{trade.asset_type.replace('_', ' ')}</span> • {new Date(trade.decision_date).toLocaleDateString()}
-                    </p>
+                    <p className="font-bold font-syne text-sm">{trade.asset_name}</p>
+                    <p className="text-xs text-tx-text-secondary">{new Date(trade.decision_date).toLocaleDateString()}</p>
                   </div>
-                  <Link 
-                    href={`/review?id=${trade.id}`}
-                    className="px-4 py-2 bg-tx-primary/10 hover:bg-tx-primary/20 text-tx-primary border border-tx-primary/30 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Review Now &rarr;
+                  <Link href={`/review?id=${trade.id}`}
+                    className="px-3 py-1.5 bg-tx-primary/10 hover:bg-tx-primary/20 text-tx-primary border border-tx-primary/30 rounded-lg text-xs font-medium transition-colors">
+                    Review →
                   </Link>
                 </div>
               ))}
-              {stats.pending_reviews.length === 0 && (
-                <div className="p-10 text-center text-tx-text-secondary italic">
-                  No trades pending review. Stay disciplined.
-                </div>
+              {stats!.pending_reviews.length === 0 && (
+                <div className="p-8 text-center text-tx-text-secondary italic text-sm">No trades pending review.</div>
               )}
             </div>
           </div>
-          
-          <div className="text-center italic text-sm text-tx-text-muted">
-            &quot;Your portfolio called. It&apos;s waiting for an explanation.&quot;
-          </div>
+          <div className="text-center italic text-xs text-tx-text-muted">&quot;Your portfolio is waiting for an explanation.&quot;</div>
         </div>
       </motion.div>
 

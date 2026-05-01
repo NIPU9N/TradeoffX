@@ -18,7 +18,8 @@ import {
   DollarSign,
   BarChart3,
   Wallet,
-  Layers
+  Layers,
+  Eye
 } from "lucide-react";
 import { getProfile } from "@/lib/api";
 import type { Profile } from "@/types";
@@ -68,13 +69,14 @@ export function Sidebar() {
       .slice(0, 2);
   };
 
-  const navItems = [
+  const navItems: { name: string; href: string; icon: React.ElementType; highlight?: boolean; pro?: boolean; watchlist?: boolean }[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "New Decision", href: "/new", icon: PlusCircle, highlight: true },
     { name: "My Decisions", href: "/decisions", icon: BookOpen },
     { name: "P&L Analysis", href: "/pl", icon: BarChart3 },
     ...(isPractice ? [{ name: "Practice Portfolio", href: "/practice", icon: Wallet }] : []),
     { name: "Strategy Builder", href: "/builder", icon: Layers },
+    { name: "Watchlist", href: "/watchlist", icon: Eye, watchlist: true },
     { name: "Outcome Review", href: "/review", icon: CheckCircle },
     { name: "Pattern Mirror", href: "/mirror", icon: Brain },
     { name: "My Progress", href: "/compare", icon: GitCompare, pro: true },
@@ -145,7 +147,8 @@ export function Sidebar() {
                     isActive
                       ? "bg-tx-primary/10 text-tx-primary font-medium"
                       : "text-tx-text-secondary hover:text-white hover:bg-tx-glass",
-                    item.highlight && !isActive && "text-tx-primary hover:text-tx-primary drop-shadow-[0_0_8px_rgba(255,255,255,0.12)]"
+                    item.highlight && !isActive && "text-tx-primary hover:text-tx-primary drop-shadow-[0_0_8px_rgba(255,255,255,0.12)]",
+                    item.watchlist && !isActive && (isPractice ? "hover:text-tx-primary" : "hover:text-yellow-400")
                   )}
                 >
                   {isActive && (
@@ -155,7 +158,12 @@ export function Sidebar() {
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
-                  <item.icon className={cn("w-5 h-5 transition-transform duration-300", isActive || item.highlight ? "text-tx-primary" : "", "group-hover:scale-110")} />
+                  <item.icon className={cn(
+                    "w-5 h-5 transition-transform duration-300 group-hover:scale-110",
+                    isActive ? "text-tx-primary" : "",
+                    item.highlight && !isActive ? "text-tx-primary" : "",
+                    item.watchlist && !isActive ? (isPractice ? "text-tx-primary" : "text-yellow-400") : ""
+                  )} />
                   <span className="font-inter text-sm flex-1">{item.name}</span>
                   {item.pro && (
                     <span className="text-[9px] uppercase tracking-wider font-bold bg-[#FFB800]/20 text-[#FFB800] px-1.5 py-0.5 rounded-sm">PRO</span>
