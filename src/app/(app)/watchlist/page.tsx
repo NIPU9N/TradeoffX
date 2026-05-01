@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, Plus, Trash2, TrendingUp, TrendingDown, CheckCircle, XCircle, Clock, Search, AlertCircle, Loader2, RefreshCw, X, Calendar } from "lucide-react";
+import { Eye, Plus, Trash2, TrendingUp, TrendingDown, CheckCircle, XCircle, Clock, Search, AlertCircle, Loader2, RefreshCw, X, Calendar, Edit2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMode } from "@/context/ModeContext";
 import { getWatchlist, createWatchlistItem, updateWatchlistItem, deleteWatchlistItem } from "@/lib/api";
@@ -181,9 +181,101 @@ function SkipModal({ item, onClose, onSkip }: { item: WatchlistItem; onClose: ()
   );
 }
 
+// ---------- Edit Modal ----------
+function EditModal({ item, onClose, onUpdate }: { item: WatchlistItem; onClose: () => void; onUpdate: () => void }) {
+  const [form, setForm] = useState<Partial<WatchlistItem>>({
+    watching_thesis: item.watching_thesis,
+    what_would_make_me_buy: item.what_would_make_me_buy,
+    what_would_make_me_skip: item.what_would_make_me_skip,
+    target_entry_price: item.target_entry_price,
+    max_entry_price: item.max_entry_price,
+    review_date: item.review_date,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!form.watching_thesis || form.watching_thesis.length < 10) return setError("Thesis must be at least 10 characters");
+    setSaving(true);
+    try {
+      await updateWatchlistItem(item.id, form);
+      onUpdate();
+      onClose();
+    } catch (e: any) { setError(e.message); }
+    setSaving(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="bg-[#0D0D17] border border-tx-border rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="font-syne text-2xl font-bold flex items-center gap-2"><Edit2 className="w-6 h-6 text-tx-primary" /> Edit Watchlist Item</h2>
+          <button onClick={onClose} className="p-2 hover:bg-tx-card rounded-lg"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="space-y-5">
+          {/* Thesis */}
+          <div>
+            <label className="block text-sm text-tx-text-secondary mb-2">Why are you watching this? *</label>
+            <textarea value={form.watching_thesis ?? ""} onChange={e => setForm(f => ({ ...f, watching_thesis: e.target.value }))}
+              placeholder="What's the thesis? What catalyst are you waiting for?" rows={3}
+              className="w-full bg-tx-bg border border-tx-border rounded-xl p-3 text-white resize-none focus:outline-none focus:border-tx-primary" />
+          </div>
+
+          {/* Buy / Skip conditions */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-tx-text-secondary mb-2">What would make you buy?</label>
+              <textarea value={form.what_would_make_me_buy ?? ""} onChange={e => setForm(f => ({ ...f, what_would_make_me_buy: e.target.value }))}
+                placeholder="e.g. Price drops to ₹1200, Q3 margins improve..." rows={2}
+                className="w-full bg-tx-bg border border-tx-border rounded-xl p-3 text-white resize-none focus:outline-none focus:border-emerald-500 text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm text-tx-text-secondary mb-2">What would make you skip?</label>
+              <textarea value={form.what_would_make_me_skip ?? ""} onChange={e => setForm(f => ({ ...f, what_would_make_me_skip: e.target.value }))}
+                placeholder="e.g. Revenue misses, valuation > 30x PE..." rows={2}
+                className="w-full bg-tx-bg border border-tx-border rounded-xl p-3 text-white resize-none focus:outline-none focus:border-red-500 text-sm" />
+            </div>
+          </div>
+
+          {/* Price targets */}
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs text-tx-text-secondary mb-2">Target Entry (₹)</label>
+              <input type="number" value={form.target_entry_price ?? ""} onChange={e => setForm(f => ({ ...f, target_entry_price: parseFloat(e.target.value) || null }))}
+                className="w-full bg-tx-bg border border-tx-border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-tx-primary" />
+            </div>
+            <div>
+              <label className="block text-xs text-tx-text-secondary mb-2">Max Entry (₹)</label>
+              <input type="number" value={form.max_entry_price ?? ""} onChange={e => setForm(f => ({ ...f, max_entry_price: parseFloat(e.target.value) || null }))}
+                className="w-full bg-tx-bg border border-tx-border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-tx-primary" />
+            </div>
+            <div>
+              <label className="block text-xs text-tx-text-secondary mb-2">Review Date</label>
+              <input type="date" value={form.review_date ?? ""} onChange={e => setForm(f => ({ ...f, review_date: e.target.value }))}
+                style={{ colorScheme: "dark" }} className="w-full bg-tx-bg border border-tx-border rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-tx-primary" />
+            </div>
+          </div>
+
+          {error && <p className="text-red-400 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" />{error}</p>}
+
+          <div className="flex gap-3 pt-2">
+            <button onClick={onClose} className="flex-1 py-3 border border-tx-border rounded-xl text-tx-text-secondary hover:text-white transition-colors">Cancel</button>
+            <button onClick={handleSubmit} disabled={saving}
+              className="flex-1 py-3 bg-tx-primary text-tx-bg font-bold rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : "Save Changes"}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ---------- Watchlist Card ----------
-function WatchlistCard({ item, onRefresh, onBuy, onSkip, onDelete }:
-  { item: WatchlistItem; onRefresh: () => void; onBuy: () => void; onSkip: () => void; onDelete: () => void }) {
+function WatchlistCard({ item, onRefresh, onBuy, onSkip, onEdit, onDelete }:
+  { item: WatchlistItem; onRefresh: () => void; onBuy: () => void; onSkip: () => void; onEdit: () => void; onDelete: () => void }) {
   const priceChange = item.price_when_added && item.current_price
     ? ((item.current_price - item.price_when_added) / item.price_when_added) * 100 : null;
   const isReviewDue = item.review_date && new Date(item.review_date) <= new Date() && item.status === "watching";
@@ -253,6 +345,9 @@ function WatchlistCard({ item, onRefresh, onBuy, onSkip, onDelete }:
           <button onClick={onRefresh} className="flex items-center gap-1 px-3 py-2 bg-tx-card border border-tx-border rounded-lg text-xs text-tx-text-secondary hover:text-white transition-colors">
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </button>
+          <button onClick={onEdit} className="flex items-center gap-1 px-3 py-2 bg-tx-card border border-tx-border rounded-lg text-xs text-tx-text-secondary hover:text-white transition-colors">
+            <Edit2 className="w-3.5 h-3.5" /> Edit
+          </button>
           <button onClick={onDelete} className="ml-auto p-2 text-tx-text-muted hover:text-red-400 transition-colors">
             <Trash2 className="w-4 h-4" />
           </button>
@@ -274,6 +369,7 @@ export default function WatchlistPage() {
   const [filter, setFilter] = useState<FilterTab>("all");
   const [showAdd, setShowAdd] = useState(false);
   const [skipItem, setSkipItem] = useState<WatchlistItem | null>(null);
+  const [editItem, setEditItem] = useState<WatchlistItem | null>(null);
   const accent = isPractice ? "text-tx-primary" : "text-yellow-400";
 
   const load = useCallback(async (silent = false) => {
@@ -342,7 +438,7 @@ export default function WatchlistPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
           <h1 className="font-syne text-4xl font-bold flex items-center gap-3">
-            <Eye className={cn("w-9 h-9", accent)} /> Watchlist
+            <Eye className="w-9 h-9 text-white" /> Watchlist
           </h1>
           <p className="text-tx-text-secondary mt-2">Stocks you're considering. Your pre-decision journal.</p>
           <span className={cn("inline-flex mt-3 px-3 py-1 rounded-full text-xs font-semibold border uppercase tracking-widest",
@@ -399,6 +495,7 @@ export default function WatchlistPage() {
                 onRefresh={() => handleRefreshPrice(item)}
                 onBuy={() => handleBuy(item)}
                 onSkip={() => setSkipItem(item)}
+                onEdit={() => setEditItem(item)}
                 onDelete={() => handleDelete(item.id)} />
             ))}
           </AnimatePresence>
@@ -406,6 +503,7 @@ export default function WatchlistPage() {
       )}
 
       {showAdd && <AddModal mode={mode} onClose={() => setShowAdd(false)} onAdd={item => { setItems(prev => [item, ...prev]); }} />}
+      {editItem && <EditModal item={editItem} onClose={() => setEditItem(null)} onUpdate={() => load(true)} />}
       {skipItem && <SkipModal item={skipItem} onClose={() => setSkipItem(null)} onSkip={handleSkip} />}
     </div>
   );
