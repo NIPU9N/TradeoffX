@@ -3214,7 +3214,7 @@ export const KNOWN_ASSETS: KnownAsset[] = [
   },
   {
     "name": "GE Power India Ltd",
-    "symbol": "GEPIL.NS",
+    "symbol": "GVPIL.NS",
     "type": "stock"
   },
   {

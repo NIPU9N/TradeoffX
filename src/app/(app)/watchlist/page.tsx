@@ -279,7 +279,18 @@ function WatchlistCard({ item, onRefresh, onBuy, onSkip, onEdit, onDelete }:
   const priceChange = item.price_when_added && item.current_price
     ? ((item.current_price - item.price_when_added) / item.price_when_added) * 100 : null;
   const isReviewDue = item.review_date && new Date(item.review_date) <= new Date() && item.status === "watching";
-  const isAtTarget = item.target_entry_price && item.current_price && item.current_price <= item.target_entry_price;
+  
+  const isAtTarget = (() => {
+    if (!item.target_entry_price || !item.current_price) return false;
+    if (item.max_entry_price) {
+      const min = Math.min(item.target_entry_price, item.max_entry_price);
+      const max = Math.max(item.target_entry_price, item.max_entry_price);
+      return item.current_price >= min && item.current_price <= max;
+    }
+    const diff = Math.abs(item.current_price - item.target_entry_price) / item.target_entry_price;
+    return diff <= 0.01;
+  })();
+  
   const isAboveMax = item.max_entry_price && item.current_price && item.current_price > item.max_entry_price;
   const watchedDays = Math.floor((Date.now() - new Date(item.watched_since).getTime()) / 86400000);
 
