@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { getDisplayStreak } from "@/lib/streak";
 
 // GET /api/dashboard — aggregated stats for the logged-in user
 export async function GET(request: Request) {
@@ -127,7 +128,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     total_decisions: allDecisions.length,
     win_rate: winRate,
-    current_streak: profile?.current_streak || 0,
+    current_streak: getDisplayStreak(profile?.last_decision_date, profile?.current_streak || 0),
     longest_streak: profile?.longest_streak || 0,
     logic_score: logicScore,
     emotion_score: emotionScore,
