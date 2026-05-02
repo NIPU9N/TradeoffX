@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn, DEVELOPER_EMAILS } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -75,7 +75,7 @@ export function Sidebar() {
     { name: "My Decisions", href: "/decisions", icon: BookOpen },
     { name: "P&L Analysis", href: "/pl", icon: BarChart3 },
     ...(isPractice ? [{ name: "Practice Portfolio", href: "/practice", icon: Wallet }] : []),
-    { name: "Strategy Builder", href: "/builder", icon: Layers },
+    ...(profile?.email && DEVELOPER_EMAILS.includes(profile.email) ? [{ name: "Strategy Builder", href: "/builder", icon: Layers }] : []),
     { name: "Watchlist", href: "/watchlist", icon: Eye, watchlist: true },
     { name: "Outcome Review", href: "/review", icon: CheckCircle },
     { name: "Pattern Mirror", href: "/mirror", icon: Brain },

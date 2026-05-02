@@ -6,9 +6,12 @@ import { OptionLeg, calculateStrategyMetrics, generatePayoffCurve, OptionChainDa
 import { StrategyLegManager } from "@/components/StrategyLegManager";
 import { StrategyPayoffChart } from "@/components/StrategyPayoffChart";
 import { KNOWN_ASSETS } from "@/lib/assets";
-import { cn } from "@/lib/utils";
+import { cn, DEVELOPER_EMAILS } from "@/lib/utils";
+import { getProfile } from "@/lib/api";
+import Link from "next/link";
 
 export default function BuilderPage() {
+  const [isDeveloper, setIsDeveloper] = useState<boolean | null>(null);
   const [legs, setLegs] = useState<OptionLeg[]>([]);
   const [underlyingPrice, setUnderlyingPrice] = useState(10000); // Default placeholder
   const [assetSearch, setAssetSearch] = useState("");
@@ -23,6 +26,18 @@ export default function BuilderPage() {
       asset.name.toLowerCase().includes(query) || asset.symbol.toLowerCase().includes(query)
     ).slice(0, 5);
   }, [assetSearch]);
+
+  useEffect(() => {
+    async function checkAccess() {
+      try {
+        const { profile } = await getProfile();
+        setIsDeveloper(profile?.email ? DEVELOPER_EMAILS.includes(profile.email) : false);
+      } catch (err) {
+        setIsDeveloper(false);
+      }
+    }
+    checkAccess();
+  }, []);
 
   useEffect(() => {
     if (!selectedAsset) return;
@@ -54,6 +69,31 @@ export default function BuilderPage() {
 
   const payoffData = useMemo(() => generatePayoffCurve(legs, underlyingPrice, 0.15), [legs, underlyingPrice]);
   const metrics = useMemo(() => calculateStrategyMetrics(legs, underlyingPrice), [legs, underlyingPrice]);
+
+  if (isDeveloper === null) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="w-8 h-8 text-tx-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (isDeveloper === false) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[70vh] text-center px-4">
+        <div className="w-16 h-16 bg-tx-primary/10 rounded-2xl flex items-center justify-center mb-6 border border-tx-primary/20">
+          <span className="text-3xl">🏗️</span>
+        </div>
+        <h1 className="font-syne text-3xl font-bold mb-3">Developer Preview</h1>
+        <p className="text-tx-text-secondary max-w-md mb-8">
+          The Options Strategy Builder is currently in closed testing. It will be available to all users in an upcoming release.
+        </p>
+        <Link href="/dashboard" className="bg-tx-primary text-tx-bg font-bold px-6 py-3 rounded-xl transition-all hover:opacity-90">
+          Return to Dashboard
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
