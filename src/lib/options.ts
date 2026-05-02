@@ -8,6 +8,7 @@ export interface OptionLeg {
   strike: number;
   premium: number;
   quantity: number;
+  expiry: string; // e.g., "08-May-2025" — NSE format
 }
 
 export interface StrategyMetrics {
@@ -37,6 +38,7 @@ export interface OptionChainData {
   underlyingValue: number;
   timestamp: string;
   isMocked: boolean;
+  expiryDates: string[];  // All available expiry dates from NSE
   strikes: OptionStrikeData[];
 }
 

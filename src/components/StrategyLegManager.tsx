@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Calendar } from "lucide-react";
 import { OptionLeg, OptionType, PositionType, OptionChainData } from "@/lib/options";
 import { cn } from "@/lib/utils";
 
@@ -11,21 +11,19 @@ interface StrategyLegManagerProps {
 
 export function StrategyLegManager({ legs, onChange, currentPrice, optionChain }: StrategyLegManagerProps) {
   const availableStrikes = optionChain?.strikes || [];
-  
-  // Helper to find the premium for a given strike and option type
+  const availableExpiries = optionChain?.expiryDates || [];
+
   const getPremiumForStrike = (strike: number, type: OptionType): number => {
-    if (!optionChain) return 100; // fallback
+    if (!optionChain) return 100;
     const strikeData = optionChain.strikes.find(s => s.strikePrice === strike);
     if (!strikeData) return 100;
     return type === "CE" ? strikeData.ce.lastPrice : strikeData.pe.lastPrice;
   };
 
   const addLeg = () => {
-    // Default to the closest ATM strike if available
     let defaultStrike = Math.round(currentPrice || 10000);
     if (availableStrikes.length > 0) {
-      // Find closest strike
-      const closest = availableStrikes.reduce((prev, curr) => 
+      const closest = availableStrikes.reduce((prev, curr) =>
         Math.abs(curr.strikePrice - currentPrice) < Math.abs(prev.strikePrice - currentPrice) ? curr : prev
       );
       defaultStrike = closest.strikePrice;
@@ -33,6 +31,7 @@ export function StrategyLegManager({ legs, onChange, currentPrice, optionChain }
 
     const defaultType: OptionType = "CE";
     const defaultPremium = getPremiumForStrike(defaultStrike, defaultType);
+    const defaultExpiry = availableExpiries[0] || "";
 
     const newLeg: OptionLeg = {
       id: Math.random().toString(36).substring(7),
@@ -41,6 +40,7 @@ export function StrategyLegManager({ legs, onChange, currentPrice, optionChain }
       strike: defaultStrike,
       premium: defaultPremium,
       quantity: 1,
+      expiry: defaultExpiry,
     };
     onChange([...legs, newLeg]);
   };
@@ -49,12 +49,9 @@ export function StrategyLegManager({ legs, onChange, currentPrice, optionChain }
     onChange(legs.map((leg) => {
       if (leg.id === id) {
         const updatedLeg = { ...leg, ...updates };
-        
-        // If strike or type changed, auto-update the premium if chain is available
         if ((updates.strike !== undefined || updates.type !== undefined) && optionChain) {
           updatedLeg.premium = getPremiumForStrike(updatedLeg.strike, updatedLeg.type);
         }
-        
         return updatedLeg;
       }
       return leg;
@@ -86,6 +83,7 @@ export function StrategyLegManager({ legs, onChange, currentPrice, optionChain }
         <div className="space-y-3">
           {legs.map((leg) => (
             <div key={leg.id} className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-4 bg-tx-card border border-tx-border rounded-xl">
+              {/* BUY / SELL */}
               <select
                 value={leg.position}
                 onChange={(e) => updateLeg(leg.id, { position: e.target.value as PositionType })}
@@ -98,6 +96,7 @@ export function StrategyLegManager({ legs, onChange, currentPrice, optionChain }
                 <option value="SELL">SELL</option>
               </select>
 
+              {/* CE / PE */}
               <select
                 value={leg.type}
                 onChange={(e) => updateLeg(leg.id, { type: e.target.value as OptionType })}
@@ -107,6 +106,33 @@ export function StrategyLegManager({ legs, onChange, currentPrice, optionChain }
                 <option value="PE">PE (Put)</option>
               </select>
 
+              {/* Expiry */}
+              <div className="flex-1 min-w-[120px]">
+                <label className="block text-[10px] uppercase tracking-wider text-tx-text-secondary mb-1 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" /> Expiry
+                </label>
+                {availableExpiries.length > 0 ? (
+                  <select
+                    value={leg.expiry}
+                    onChange={(e) => updateLeg(leg.id, { expiry: e.target.value })}
+                    className="w-full bg-tx-bg border border-tx-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-tx-primary"
+                  >
+                    {availableExpiries.map(exp => (
+                      <option key={exp} value={exp}>{exp}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={leg.expiry}
+                    onChange={(e) => updateLeg(leg.id, { expiry: e.target.value })}
+                    placeholder="DD-Mon-YYYY"
+                    className="w-full bg-tx-bg border border-tx-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-tx-primary"
+                  />
+                )}
+              </div>
+
+              {/* Strike */}
               <div className="flex-1 min-w-[100px]">
                 <label className="block text-[10px] uppercase tracking-wider text-tx-text-secondary mb-1">Strike</label>
                 {availableStrikes.length > 0 ? (
@@ -129,6 +155,7 @@ export function StrategyLegManager({ legs, onChange, currentPrice, optionChain }
                 )}
               </div>
 
+              {/* Premium */}
               <div className="flex-1 min-w-[80px]">
                 <label className="block text-[10px] uppercase tracking-wider text-tx-text-secondary mb-1">Premium</label>
                 <input
@@ -136,12 +163,13 @@ export function StrategyLegManager({ legs, onChange, currentPrice, optionChain }
                   value={leg.premium}
                   onChange={(e) => updateLeg(leg.id, { premium: Number(e.target.value) })}
                   className="w-full bg-tx-bg border border-tx-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-tx-primary"
-                  readOnly={!!optionChain} // Read-only if we have live data
+                  readOnly={!!optionChain}
                   title={optionChain ? "Premium is auto-fetched from live market data" : "Enter premium manually"}
                 />
               </div>
 
-              <div className="flex-1 min-w-[80px]">
+              {/* Qty */}
+              <div className="flex-1 min-w-[60px]">
                 <label className="block text-[10px] uppercase tracking-wider text-tx-text-secondary mb-1">Qty</label>
                 <input
                   type="number"

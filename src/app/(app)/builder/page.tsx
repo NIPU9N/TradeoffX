@@ -102,13 +102,24 @@ export default function BuilderPage() {
     if (legs.length === 0) return null;
     let delta = 0, gamma = 0, theta = 0, vega = 0;
     const r = 0.065;
-    const t = 7 / 365; // default 7 DTE
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     for (const leg of legs) {
       const strike = optionChain?.strikes.find(s => s.strikePrice === leg.strike);
       const iv = leg.type === "CE"
         ? (strike?.ce.impliedVolatility ?? 15) / 100
         : (strike?.pe.impliedVolatility ?? 15) / 100;
+
+      // Compute actual DTE from the leg's expiry string (e.g., "08-May-2025")
+      let dte = 7;
+      if (leg.expiry) {
+        const expiryDate = new Date(leg.expiry);
+        if (!isNaN(expiryDate.getTime())) {
+          dte = Math.max(0, Math.ceil((expiryDate.getTime() - today.getTime()) / 86400000));
+        }
+      }
+      const t = Math.max(dte, 0.5) / 365; // min 0.5 days to avoid divide by zero
 
       const bs = calculateBS(
         leg.type === "CE" ? "call" : "put",
@@ -126,6 +137,7 @@ export default function BuilderPage() {
     }
     return { delta, gamma, theta, vega };
   }, [legs, underlyingPrice, optionChain]);
+
 
   if (isDeveloper === null) {
     return (

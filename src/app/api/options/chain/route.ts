@@ -51,21 +51,35 @@ function generateMockChain(symbol: string): OptionChainData {
     });
   }
 
+  // Generate the next 4 weekly Thursdays as mock expiry dates (NSE format: "08-May-2025")
+  const expiryDates: string[] = [];
+  const d = new Date();
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  d.setDate(d.getDate() + ((4 - d.getDay() + 7) % 7 || 7)); // move to next Thursday
+  for (let i = 0; i < 4; i++) {
+    const dd = String(d.getDate()).padStart(2, '0');
+    expiryDates.push(`${dd}-${months[d.getMonth()]}-${d.getFullYear()}`);
+    d.setDate(d.getDate() + 7);
+  }
+
   return {
     symbol,
     underlyingValue,
+    expiryDates,
     timestamp: new Date().toISOString(),
     isMocked: true,
     strikes,
   };
+
 }
 
 // Parse NSE JSON payload into our OptionChainData shape
-function parseNseData(symbol: string, nseData: any, timestamp?: string): OptionChainData | null {
+function parseNseData(symbol: string, nseData: any, timestamp?: string, selectedExpiry?: string): OptionChainData | null {
   if (!nseData?.records?.data?.length) return null;
 
   const underlyingValue = nseData.records.underlyingValue || 0;
-  const currentExpiry = nseData.records.expiryDates?.[0];
+  const expiryDates: string[] = nseData.records.expiryDates || [];
+  const currentExpiry = selectedExpiry || expiryDates[0];
   const filteredData = nseData.records.data.filter((d: any) => d.expiryDate === currentExpiry);
 
   const strikes: OptionStrikeData[] = [];
@@ -92,6 +106,7 @@ function parseNseData(symbol: string, nseData: any, timestamp?: string): OptionC
   return {
     symbol,
     underlyingValue,
+    expiryDates,
     timestamp: timestamp || nseData.records.timestamp || new Date().toISOString(),
     isMocked: false,
     strikes: strikes.sort((a, b) => a.strikePrice - b.strikePrice),
@@ -132,6 +147,7 @@ async function fetchFromNse(symbol: string): Promise<OptionChainData | null> {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   let symbol = searchParams.get("symbol");
+  const selectedExpiry = searchParams.get("expiry") || undefined;
 
   if (!symbol) {
     return NextResponse.json({ error: "Symbol is required" }, { status: 400 });
@@ -150,7 +166,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (cached?.data) {
-      const parsed = parseNseData(symbol, cached.data, cached.timestamp);
+      const parsed = parseNseData(symbol, cached.data, cached.timestamp, selectedExpiry);
       if (parsed) {
         return NextResponse.json(parsed);
       }
@@ -167,7 +183,8 @@ export async function GET(request: NextRequest) {
     console.warn(`NSE blocked for ${symbol}, serving mock data…`);
 
     // ── Layer 3: Mock data (NSE also blocked, market hours, or unknown symbol) ──
-    return NextResponse.json(generateMockChain(symbol));
+    const mock = generateMockChain(symbol);
+    return NextResponse.json(mock);
 
   } catch (error) {
     console.error("Option chain route error:", error);
