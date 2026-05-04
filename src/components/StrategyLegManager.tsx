@@ -1,5 +1,5 @@
 import { Plus, Trash2, Calendar } from "lucide-react";
-import { OptionLeg, OptionType, PositionType, OptionChainData } from "@/lib/options";
+import { OptionLeg, OptionType, PositionType, OptionChainData, getLotSizeForSymbol } from "@/lib/options";
 import { cn } from "@/lib/utils";
 
 interface StrategyLegManagerProps {
@@ -32,6 +32,10 @@ export function StrategyLegManager({ legs, onChange, currentPrice, optionChain }
     const defaultType: OptionType = "CE";
     const defaultPremium = getPremiumForStrike(defaultStrike, defaultType);
     const defaultExpiry = availableExpiries[0] || "";
+    const lotSize = optionChain ? getLotSizeForSymbol(optionChain.symbol) : 1;
+    const defaultIv = optionChain
+      ? optionChain.strikes.find(s => s.strikePrice === defaultStrike)?.[defaultType.toLowerCase() as "ce" | "pe"].impliedVolatility ?? 15
+      : 15;
 
     const newLeg: OptionLeg = {
       id: Math.random().toString(36).substring(7),
@@ -41,6 +45,8 @@ export function StrategyLegManager({ legs, onChange, currentPrice, optionChain }
       premium: defaultPremium,
       quantity: 1,
       expiry: defaultExpiry,
+      iv: defaultIv,
+      lotSize,
     };
     onChange([...legs, newLeg]);
   };
