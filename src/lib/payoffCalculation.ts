@@ -1,5 +1,5 @@
 import { OptionPosition } from "@/app/(app)/options/page";
-import { blackScholesCall, blackScholesCallDelta, blackScholesGamma, blackScholesTheta, blackScholesVega } from "./blackScholes";
+import { calculateBS } from "./blackScholes";
 
 const RISK_FREE_RATE = 0.06; // 6% annual
 const DAYS_IN_YEAR = 365;
@@ -127,67 +127,23 @@ export function calculatePositionGreeks(
 
   for (const position of positions) {
     const timeToExpiry = daysToExpiry / DAYS_IN_YEAR;
-    const moneyness = spotPrice / position.strike;
     const isCall = position.type.includes("call");
     const multiplier = position.type.startsWith("buy") ? 1 : -1;
 
-    // Simplified Greeks calculations (approximate)
-    const delta = calculateDelta(spotPrice, position.strike, position.iv, timeToExpiry, isCall);
-    const gamma = calculateGamma(spotPrice, position.strike, position.iv, timeToExpiry);
-    const theta = calculateTheta(spotPrice, position.strike, position.iv, timeToExpiry, isCall, position.premium);
-    const vega = calculateVega(spotPrice, position.strike, position.iv, timeToExpiry);
+    const bs = calculateBS(
+      isCall ? 'call' : 'put',
+      spotPrice,
+      position.strike,
+      timeToExpiry,
+      RISK_FREE_RATE,
+      position.iv
+    );
 
-    totalDelta += delta * multiplier * position.quantity * position.lotSize;
-    totalGamma += gamma * multiplier * position.quantity * position.lotSize;
-    totalTheta += theta * multiplier * position.quantity * position.lotSize;
-    totalVega += vega * multiplier * position.quantity * position.lotSize;
+    totalDelta += bs.delta * multiplier * position.quantity * position.lotSize;
+    totalGamma += bs.gamma * multiplier * position.quantity * position.lotSize;
+    totalTheta += bs.theta * multiplier * position.quantity * position.lotSize;
+    totalVega += bs.vega * multiplier * position.quantity * position.lotSize;
   }
 
   return { delta: totalDelta, gamma: totalGamma, theta: totalTheta, vega: totalVega };
-}
-
-function calculateDelta(
-  spot: number,
-  strike: number,
-  iv: number,
-  timeToExpiry: number,
-  isCall: boolean
-): number {
-  const d1 = (Math.log(spot / strike) + (RISK_FREE_RATE + (iv * iv) / 2) * timeToExpiry) / (iv * Math.sqrt(timeToExpiry));
-  const cumulativeNormal = (z: number) => 0.5 * (1 + Math.tanh(0.7978845608 * z));
-
-  return isCall ? cumulativeNormal(d1) : cumulativeNormal(d1) - 1;
-}
-
-function calculateGamma(spot: number, strike: number, iv: number, timeToExpiry: number): number {
-  const d1 = (Math.log(spot / strike) + (RISK_FREE_RATE + (iv * iv) / 2) * timeToExpiry) / (iv * Math.sqrt(timeToExpiry));
-  const standardNormal = (z: number) => Math.exp((-z * z) / 2) / Math.sqrt(2 * Math.PI);
-
-  return standardNormal(d1) / (spot * iv * Math.sqrt(timeToExpiry));
-}
-
-function calculateTheta(
-  spot: number,
-  strike: number,
-  iv: number,
-  timeToExpiry: number,
-  isCall: boolean,
-  premium: number
-): number {
-  // Simplified theta: premium decay over time
-  // Theta per day approximately = (premium change per day)
-  if (timeToExpiry <= 0) return 0;
-
-  const decayRate = Math.exp(-RISK_FREE_RATE * timeToExpiry);
-  const estimatedTheta = -(premium / timeToExpiry) * decayRate * 0.05; // ~5% daily decay near expiry
-
-  return estimatedTheta;
-}
-
-function calculateVega(spot: number, strike: number, iv: number, timeToExpiry: number): number {
-  const d1 = (Math.log(spot / strike) + (RISK_FREE_RATE + (iv * iv) / 2) * timeToExpiry) / (iv * Math.sqrt(timeToExpiry));
-  const standardNormal = (z: number) => Math.exp((-z * z) / 2) / Math.sqrt(2 * Math.PI);
-
-  // Vega per 1% IV change
-  return spot * standardNormal(d1) * Math.sqrt(timeToExpiry) * 0.01;
 }
