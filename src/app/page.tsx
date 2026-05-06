@@ -7,7 +7,7 @@ import { motion, useScroll, useTransform, useMotionValue, useSpring } from "fram
 import { ArrowRight, BookOpen, BarChart2, TrendingUp, AlertTriangle, Shield, CheckCircle2, ChevronDown, Zap, Target, Brain, Sparkles, Star, Users, Trophy, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-const Counter = ({ from = 0, to, duration = 2 }) => {
+const Counter = ({ from = 0, to, duration = 2 }: { from?: number, to: number, duration?: number }) => {
   const [count, setCount] = useState(from);
   useEffect(() => {
     let start = from;
