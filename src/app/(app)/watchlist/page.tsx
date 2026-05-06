@@ -419,9 +419,9 @@ export default function WatchlistPage() {
     load(true);
   };
 
-  const handleBuy = (item: WatchlistItem) => {
-    const params = new URLSearchParams({ prefill_asset: item.asset_name, prefill_thesis: item.watching_thesis });
-    router.push(`/new?${params.toString()}`);
+  const handleBuy = async (item: WatchlistItem) => {
+    await updateWatchlistItem(item.id, { status: "bought" } as any);
+    load(true);
   };
 
   const handleSkip = async (id: string, reason: string, learned: string) => {
