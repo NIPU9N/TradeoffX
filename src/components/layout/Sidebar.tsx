@@ -69,12 +69,13 @@ export function Sidebar() {
       .slice(0, 2);
   };
 
-  const navItems: { name: string; href: string; icon: React.ElementType; highlight?: boolean; pro?: boolean; watchlist?: boolean }[] = [
+  const navItems: { name: string; href: string; icon: React.ElementType; highlight?: boolean; pro?: boolean; watchlist?: boolean; badge?: string }[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "New Decision", href: "/new", icon: PlusCircle, highlight: true },
     { name: "My Decisions", href: "/decisions", icon: BookOpen },
     { name: "P&L Analysis", href: "/pl", icon: BarChart3 },
     ...(isPractice ? [{ name: "Practice Portfolio", href: "/practice", icon: Wallet }] : []),
+    ...(isPractice ? [{ name: "Strategy Builder", href: "/options", icon: TrendingUp, badge: "Options" }] : []),
     { name: "Watchlist", href: "/watchlist", icon: Eye, watchlist: true },
     { name: "Outcome Review", href: "/review", icon: CheckCircle },
     { name: "Pattern Mirror", href: "/mirror", icon: Brain },
@@ -164,6 +165,11 @@ export function Sidebar() {
                     item.watchlist && !isActive ? (isPractice ? "text-tx-primary" : "text-yellow-400") : ""
                   )} />
                   <span className="font-inter text-sm flex-1">{item.name}</span>
+                  {item.badge && (
+                    <span className="text-[8px] uppercase tracking-widest font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-sm">
+                      {item.badge}
+                    </span>
+                  )}
                   {item.pro && (
                     <span className="text-[9px] uppercase tracking-wider font-bold bg-[#FFB800]/20 text-[#FFB800] px-1.5 py-0.5 rounded-sm">PRO</span>
                   )}
