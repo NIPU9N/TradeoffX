@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { getMockOptionChain } from "@/lib/mockOptionChain";
 import { calculateStrategyMetrics } from "@/lib/payoffCalculation";
 import { OptionsTopBar } from "@/components/options/OptionsTopBar";
@@ -24,7 +24,13 @@ export interface OptionPosition {
 }
 
 export default function OptionsPage() {
-  const { data: session } = useSession();
+  const supabase = createClient();
+  const [user, setUser] = useState<any>(null);
+  
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+  }, [supabase]);
+
   const [selectedUnderlying, setSelectedUnderlying] = useState("NIFTY");
   const [positions, setPositions] = useState<OptionPosition[]>([]);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -79,7 +85,7 @@ export default function OptionsPage() {
   };
 
   const handleSaveStrategy = async (strategyData: any) => {
-    if (!session?.user?.id) {
+    if (!user?.id) {
       alert("Please sign in to save strategies");
       return;
     }
@@ -91,7 +97,7 @@ export default function OptionsPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.user.id}`,
+          Authorization: `Bearer ${user.id}`,
         },
         body: JSON.stringify({
           name: strategyData.name,
@@ -123,13 +129,13 @@ export default function OptionsPage() {
   };
 
   const handleLoadSavedStrategies = useCallback(async () => {
-    if (!session?.user?.id) return;
+    if (!user?.id) return;
 
     try {
       const response = await fetch("/api/strategies", {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${session.user.id}`,
+          Authorization: `Bearer ${user.id}`,
         },
       });
 
@@ -142,7 +148,7 @@ export default function OptionsPage() {
     } catch (error) {
       console.error("Error loading strategies:", error);
     }
-  }, [session?.user?.id]);
+  }, [user?.id]);
 
   const handleLoadStrategy = (strategy: any) => {
     // Load positions from saved strategy
