@@ -466,78 +466,248 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* PRICING SECTION */}
-      <section className="py-32 px-6 relative z-10 bg-slate-900/20">
+      {/* P&L INTELLIGENCE SECTION */}
+      <section className="py-32 px-6 relative z-10 bg-slate-900/40">
         <div className="max-w-7xl mx-auto">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-20"
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">Simple, Transparent Pricing</h2>
-            <p className="text-slate-400 max-w-2xl mx-auto text-lg">Choose the plan that fits your trading goals</p>
-          </motion.div>
+            <div className="text-blue-400 text-sm font-bold mb-3 uppercase tracking-widest">02 / Behavioral Analytics</div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">P&L Intelligence</h2>
+            <p className="text-slate-400 max-w-2xl text-lg mb-12">Link every rupee gained or lost back to the specific emotion or decision quality that caused it.</p>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { name: "Practice", price: "FREE", features: ["Unlimited paper trading", "Decision journal", "Basic analytics", "1 year history"], badge: false },
-              { name: "Pro", price: "₹1,999", period: "/month", features: ["Everything in Practice", "Advanced Greeks analysis", "Live NSE data feed", "Custom alerts", "Priority support"], badge: true },
-              { name: "Elite", price: "₹4,999", period: "/month", features: ["Everything in Pro", "API access", "Strategy backtesting", "1-on-1 coaching", "Premium signals"], badge: false }
-            ].map((plan, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -10 }}
-                className={`relative rounded-2xl p-8 border transition-all ${
-                  plan.badge
-                    ? "border-blue-500/50 bg-gradient-to-br from-blue-900/30 to-slate-900/30 shadow-[0_0_40px_rgba(59,130,246,0.2)] scale-105"
-                    : "border-slate-700/50 bg-slate-800/30 hover:border-slate-600/50"
-                }`}
-              >
-                {plan.badge && (
-                  <motion.div 
-                    className="absolute -top-4 left-1/2 -translate-x-1/2"
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-4 py-1 rounded-full text-sm font-bold">
-                      Most Popular 🚀
-                    </div>
-                  </motion.div>
-                )}
-                <h3 className="text-2xl font-bold mb-2 text-white">{plan.name}</h3>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold text-white">{plan.price}</span>
-                  {plan.period && <span className="text-slate-400 ml-2">{plan.period}</span>}
-                </div>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, fidx) => (
-                    <li key={fidx} className="flex items-center gap-3 text-slate-300">
-                      <Sparkles className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+            {/* Time Period Selector */}
+            <div className="flex gap-4 mb-8">
+              {["7 Days", "30 Days", "All Time"].map((period, idx) => (
                 <motion.button
+                  key={period}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className={`w-full py-3 rounded-lg font-bold transition-all ${
-                    plan.badge
-                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-[0_0_20px_rgba(59,130,246,0.4)]"
-                      : "bg-slate-700 hover:bg-slate-600 text-white border border-slate-600"
+                  className={`px-6 py-2 rounded-full font-semibold transition-all ${
+                    idx === 1 
+                      ? "bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+                      : "bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-500"
                   }`}
                 >
-                  Get Started
+                  {period}
                 </motion.button>
+              ))}
+            </div>
+
+            {/* Charts Grid */}
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Emotional Impact Chart */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                viewport={{ once: true }}
+                className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-white">Emotional Impact on Returns</h3>
+                  <div className="text-right">
+                    <p className="text-red-500 font-bold text-lg">-₹12,450</p>
+                    <p className="text-xs text-red-400">due to FOMO</p>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-400 mb-6">₹ Value lost/gained by emotional state</p>
+
+                {/* Simple Bar Chart */}
+                <div className="flex items-end justify-around h-48 bg-slate-900/50 rounded-lg p-4 mb-6">
+                  {[
+                    { day: "Mon", value: 60, color: "bg-emerald-500" },
+                    { day: "Tue", value: -40, color: "bg-red-500" },
+                    { day: "Wed", value: 80, color: "bg-emerald-500" },
+                    { day: "Thu", value: 50, color: "bg-emerald-500" },
+                    { day: "Fri", value: -70, color: "bg-red-500" }
+                  ].map((bar, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ scaleY: 0 }}
+                      whileInView={{ scaleY: 1 }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="flex flex-col items-center"
+                    >
+                      <div className={`w-10 ${bar.color} rounded-t opacity-80 transition-all hover:opacity-100`} style={{ height: `${Math.abs(bar.value)}px` }} />
+                      <span className="text-xs text-slate-400 mt-2">{bar.day}</span>
+                    </motion.div>
+                  ))}
+                </div>
               </motion.div>
-            ))}
-          </div>
+
+              {/* Stats Cards */}
+              <div className="space-y-6">
+                {/* Total P&L */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  viewport={{ once: true }}
+                  className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8"
+                >
+                  <h3 className="text-sm font-semibold text-slate-400 mb-2">Total P&L (Practice)</h3>
+                  <p className="text-4xl font-bold text-emerald-400 mb-4">+₹45,200</p>
+                  <div className="bg-slate-900/50 rounded-lg p-3 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-400">Win Rate:</span>
+                      <span className="text-emerald-400 font-bold">65%</span>
+                    </div>
+                    <div className="w-full bg-slate-700 rounded-full h-2">
+                      <div className="bg-emerald-500 h-2 rounded-full" style={{ width: "65%" }} />
+                    </div>
+                    <div className="text-xs text-slate-500 mt-2">Target: ₹50Ks</div>
+                  </div>
+                </motion.div>
+
+                {/* Top Biases */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                  viewport={{ once: true }}
+                  className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8"
+                >
+                  <h3 className="text-lg font-bold text-white mb-4">Top Biases Detected</h3>
+                  <div className="space-y-3">
+                    {[
+                      { icon: "🔴", name: "Panic Selling", amount: "-₹8,200" },
+                      { icon: "🔴", name: "Revenge Trading", amount: "-₹4,100" },
+                      { icon: "🟢", name: "Patient Entries", amount: "+₹16,000" }
+                    ].map((bias, idx) => (
+                      <motion.div
+                        key={idx}
+                        whileHover={{ x: 5 }}
+                        className="flex items-center justify-between p-3 bg-slate-900/50 rounded-lg border border-slate-700/30"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">{bias.icon}</span>
+                          <span className="text-slate-300 font-medium">{bias.name}</span>
+                        </div>
+                        <span className={bias.amount.includes("-") ? "text-red-400" : "text-emerald-400"}>{bias.amount}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* OPTIONS STRATEGY BUILDER SHOWCASE */}
+      <section className="py-32 px-6 relative z-10">
+        <div className="max-w-7xl mx-auto">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <div className="text-purple-400 text-sm font-bold mb-3 uppercase tracking-widest">03 / Advanced Tools</div>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">Options Strategy Builder</h2>
+            <p className="text-slate-400 max-w-2xl text-lg mb-8">Stop guessing. Visualize accurate Greeks and payoff diagrams before deploying real capital. Practice complex strategies risk-free.</p>
+
+            {/* Features List */}
+            <div className="flex flex-col gap-3 mb-8">
+              {[
+                "Real-time accurate Greeks calculation",
+                "Interactive payoff diagrams",
+                "Multi-leg strategy support"
+              ].map((feature, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  viewport={{ once: true }}
+                  className="flex items-center gap-3 text-slate-300"
+                >
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  {feature}
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Try Builder Button */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              viewport={{ once: true }}
+              className="mb-12"
+            >
+              <Link href="/options" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-slate-900 font-bold rounded-full hover:bg-slate-100 transition-all">
+                Try Builder
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
+
+            {/* Strategy Example */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              viewport={{ once: true }}
+              className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/50 rounded-2xl p-8"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-bold text-white">Iron Condor Setup</h3>
+                <div className="text-right">
+                  <p className="text-sm text-slate-400">Max Profit</p>
+                  <p className="text-3xl font-bold text-emerald-400">₹4,500</p>
+                </div>
+              </div>
+
+              {/* Payoff Chart */}
+              <div className="mb-8">
+                <div className="h-48 bg-slate-900/50 rounded-lg p-4 flex items-end justify-around mb-4">
+                  {[18, 40, 75, 82, 65, 35, 12, 5].map((height, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ scaleY: 0 }}
+                      whileInView={{ scaleY: 1 }}
+                      transition={{ delay: idx * 0.08 }}
+                      className={`flex-1 mx-1 rounded-t ${height > 50 ? "bg-blue-500" : "bg-slate-600"}`}
+                      style={{ height: `${height}%` }}
+                    />
+                  ))}
+                </div>
+                <div className="flex justify-between text-xs text-slate-400">
+                  <span>18k</span>
+                  <span>18.5k</span>
+                  <span>19k</span>
+                  <span>19.5k</span>
+                  <span>20k</span>
+                </div>
+              </div>
+
+              {/* Greeks Display */}
+              <div className="grid grid-cols-4 gap-4">
+                {[
+                  { label: "Delta", value: "0.12", color: "text-blue-400" },
+                  { label: "Gamma", value: "-0.05", color: "text-red-400" },
+                  { label: "Theta", value: "+12.4", color: "text-emerald-400" },
+                  { label: "Vega", value: "-8.2", color: "text-slate-400" }
+                ].map((greek, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    viewport={{ once: true }}
+                    className="bg-slate-900/50 rounded-lg p-4 text-center border border-slate-700/50"
+                  >
+                    <p className="text-xs text-slate-400 mb-2 uppercase">{greek.label}</p>
+                    <p className={`text-2xl font-bold ${greek.color}`}>{greek.value}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
