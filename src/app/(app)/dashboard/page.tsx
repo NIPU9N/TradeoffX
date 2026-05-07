@@ -156,31 +156,82 @@ export default function Dashboard() {
         className="glass-card overflow-hidden p-6 relative border border-white/10">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-tx-primary/20 via-transparent to-emerald-400/10 blur-3xl" />
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-          <div className="space-y-4 max-w-2xl">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-2 rounded-full bg-tx-primary/15 px-3 py-1 text-[11px] uppercase tracking-[0.25em] text-tx-primary">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                Pulse Live
+          <div className="flex-1 max-w-xl flex flex-col justify-center">
+            <div className="flex items-center gap-3 mb-5">
+              <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live Telemetry
               </span>
-              <span className="text-[11px] uppercase tracking-[0.25em] text-tx-text-secondary">Updated every time you refresh</span>
             </div>
-            <div className="space-y-3">
-              <h2 className="font-syne text-3xl sm:text-4xl font-bold text-white">Dashboard intelligence with momentum, bias and trade pulse.</h2>
-              <p className="text-tx-text-secondary max-w-2xl leading-7">See your trading edge in motion through live trend curves, behavior heat, and confidence momentum — all inside your existing TradeoffX workflow.</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { label: "Edge Score", value: `${stats.win_rate + 8}%`, note: "Success cadence" },
-                { label: "Emotion Drag", value: `${stats.emotion_score}%`, note: "Higher means more noise", highlight: true },
-                { label: "Bias Saturation", value: `${Object.keys(stats.bias_breakdown).length}`, note: "Total bias categories" },
-                { label: "Review Velocity", value: `${stats.pending_reviews.length}`, note: "Pending decisions" },
-              ].map((item, index) => (
-                <div key={item.label} className="rounded-3xl border border-white/10 bg-slate-950/80 p-4">
-                  <p className="text-[11px] uppercase tracking-[0.25em] text-tx-text-secondary mb-2">{item.label}</p>
-                  <p className={cn("font-syne text-3xl font-bold", item.highlight ? "text-orange-400" : "text-white")}>{item.value}</p>
-                  <p className="text-[11px] text-tx-text-muted mt-2">{item.note}</p>
+            
+            <h2 className="font-syne text-3xl sm:text-4xl font-bold text-white mb-3">
+              Your Execution Engine
+            </h2>
+            <p className="text-sm text-tx-text-secondary leading-relaxed mb-8">
+              Real-time analytics on your trading habits. We process your win cadence, emotional drag, and bias saturation to keep your execution sharp and disciplined.
+            </p>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Edge Score */}
+              <div className="relative overflow-hidden rounded-2xl bg-tx-bg/50 border border-tx-border p-4 hover:border-tx-primary/30 transition-colors">
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-medium text-tx-text-secondary">Edge Score</span>
                 </div>
-              ))}
+                <div className="flex items-end gap-2">
+                  <span className="font-syne text-3xl font-bold text-white">{stats.win_rate + 8}%</span>
+                </div>
+                <div className="mt-3 h-1 w-full bg-tx-card rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${stats.win_rate + 8}%` }} />
+                </div>
+              </div>
+
+              {/* Emotion Drag */}
+              <div className="relative overflow-hidden rounded-2xl bg-tx-bg/50 border border-tx-border p-4 hover:border-orange-500/30 transition-colors">
+                <div className="flex items-center gap-2 mb-3">
+                  <Flame className="w-4 h-4 text-orange-400" />
+                  <span className="text-xs font-medium text-tx-text-secondary">Emotion Drag</span>
+                </div>
+                <div className="flex items-end gap-2">
+                  <span className="font-syne text-3xl font-bold text-orange-400">{stats.emotion_score}%</span>
+                </div>
+                <div className="mt-3 h-1 w-full bg-tx-card rounded-full overflow-hidden">
+                  <div className="h-full bg-orange-400 rounded-full" style={{ width: `${stats.emotion_score}%` }} />
+                </div>
+              </div>
+
+              {/* Bias Saturation */}
+              <div className="relative overflow-hidden rounded-2xl bg-tx-bg/50 border border-tx-border p-4 hover:border-tx-secondary/30 transition-colors">
+                <div className="flex items-center gap-2 mb-3">
+                  <Brain className="w-4 h-4 text-tx-secondary" />
+                  <span className="text-xs font-medium text-tx-text-secondary">Bias Saturation</span>
+                </div>
+                <div className="flex items-end gap-2">
+                  <span className="font-syne text-3xl font-bold text-white">{Object.keys(stats.bias_breakdown).length}</span>
+                  <span className="text-xs text-tx-text-muted mb-1">types</span>
+                </div>
+                <div className="mt-3 flex gap-1">
+                  {[1,2,3,4,5].map(i => (
+                    <div key={i} className={cn("h-1 flex-1 rounded-full", i <= Object.keys(stats.bias_breakdown).length ? "bg-tx-secondary" : "bg-tx-card")} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Pending Reviews */}
+              <div className="relative overflow-hidden rounded-2xl bg-tx-bg/50 border border-tx-border p-4 hover:border-blue-400/30 transition-colors">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="w-4 h-4 text-blue-400" />
+                  <span className="text-xs font-medium text-tx-text-secondary">Pending Reviews</span>
+                </div>
+                <div className="flex items-end gap-2">
+                  <span className="font-syne text-3xl font-bold text-white">{stats.pending_reviews.length}</span>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="h-1 flex-1 bg-tx-card rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-400 rounded-full" style={{ width: `${Math.min(100, stats.pending_reviews.length * 20)}%` }} />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
