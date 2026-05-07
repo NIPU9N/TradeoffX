@@ -68,19 +68,23 @@ export default function LandingPage() {
       
       {/* NAV */}
       <header className="fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-xl tracking-tight text-white">TradeoffX</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-8">
+        <div className="max-w-7xl mx-auto px-6 py-4 grid grid-cols-3 items-center">
+          <div className="flex items-center justify-start">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-bold text-xl tracking-tight text-white">TradeoffX</span>
+            </Link>
+          </div>
+          
+          <nav className="hidden md:flex items-center justify-center gap-8">
             <a href="#features" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Features</a>
             <a href="#platform" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Platform</a>
+            <a href="#analytics" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Analytics</a>
           </nav>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-end gap-4">
             {isAuthLoading ? (
               <div className="w-24 h-10 bg-slate-800 animate-pulse rounded-lg" />
             ) : user ? (
@@ -120,7 +124,7 @@ export default function LandingPage() {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400 text-sm font-medium mb-8 cursor-pointer hover:border-blue-400/60 hover:bg-blue-500/20 transition-all"
           >
             <motion.span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            <span>✨ India's First Decision Intelligence Platform</span>
+            <span>India's First Decision Intelligence Platform</span>
           </motion.div>
           
           <motion.h1 
@@ -182,7 +186,7 @@ export default function LandingPage() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <Link href="/onboarding" className="group flex items-center justify-center gap-2 px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-lg transition-all border border-slate-600 hover:border-slate-400 w-full sm:w-auto">
-                    📊 Practice Mode
+                    Practice Mode
                   </Link>
                 </motion.div>
                 <motion.div
@@ -191,7 +195,7 @@ export default function LandingPage() {
                 >
                   <Link href="/onboarding" className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-lg transition-all shadow-[0_0_30px_rgba(59,130,246,0.6)] w-full sm:w-auto overflow-hidden">
                     <span className="relative z-10 flex items-center gap-2">
-                      🚀 Start Free Trial
+                      Let's Start
                       <motion.div
                         animate={{ x: [0, 5, 0] }}
                         transition={{ duration: 1.5, repeat: Infinity }}
@@ -508,7 +512,7 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
                 viewport={{ once: true }}
-                className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8"
+                className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 flex flex-col h-full"
               >
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-bold text-white">Emotional Impact on Returns</h3>
@@ -520,20 +524,20 @@ export default function LandingPage() {
                 <p className="text-sm text-slate-400 mb-6">₹ Value lost/gained by emotional state</p>
 
                 {/* Simple Bar Chart */}
-                <div className="flex items-end justify-around h-48 bg-slate-900/50 rounded-lg p-4 mb-6">
+                <div className="flex-1 min-h-[200px] flex items-end justify-around bg-slate-900/50 rounded-lg p-4 mt-auto">
                   {[
-                    { day: "Mon", value: 60, color: "bg-emerald-500" },
-                    { day: "Tue", value: -40, color: "bg-red-500" },
-                    { day: "Wed", value: 80, color: "bg-emerald-500" },
-                    { day: "Thu", value: 50, color: "bg-emerald-500" },
-                    { day: "Fri", value: -70, color: "bg-red-500" }
+                    { day: "Mon", value: 100, color: "bg-emerald-500" },
+                    { day: "Tue", value: -70, color: "bg-red-500" },
+                    { day: "Wed", value: 140, color: "bg-emerald-500" },
+                    { day: "Thu", value: 90, color: "bg-emerald-500" },
+                    { day: "Fri", value: -120, color: "bg-red-500" }
                   ].map((bar, idx) => (
                     <motion.div
                       key={idx}
                       initial={{ scaleY: 0 }}
                       whileInView={{ scaleY: 1 }}
                       transition={{ delay: idx * 0.1 }}
-                      className="flex flex-col items-center"
+                      className="flex flex-col items-center h-full justify-end"
                     >
                       <div className={`w-10 ${bar.color} rounded-t opacity-80 transition-all hover:opacity-100`} style={{ height: `${Math.abs(bar.value)}px` }} />
                       <span className="text-xs text-slate-400 mt-2">{bar.day}</span>
@@ -759,7 +763,7 @@ export default function LandingPage() {
             >
               <Link href="/onboarding" className="group relative inline-flex items-center justify-center gap-2 px-10 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-lg transition-all shadow-[0_0_40px_rgba(59,130,246,0.5)] overflow-hidden">
                 <span className="relative z-10 flex items-center gap-2">
-                  🚀 Start Free Trial
+                  Let's Start
                   <motion.div
                     animate={{ x: [0, 5, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
@@ -775,20 +779,11 @@ export default function LandingPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <button className="px-10 py-5 border-2 border-slate-600 hover:border-slate-400 text-white font-bold rounded-xl text-lg transition-all hover:bg-slate-800/50">
-                📱 Book a Demo
+              <button onClick={handleLogin} className="px-10 py-5 border-2 border-slate-600 hover:border-slate-400 text-white font-bold rounded-xl text-lg transition-all hover:bg-slate-800/50">
+                Sign in
               </button>
             </motion.div>
           </motion.div>
-
-          <motion.p 
-            className="text-slate-400 mt-8 text-sm"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            ✓ No credit card required • ✓ Practice mode free forever • ✓ Cancel anytime
-          </motion.p>
         </motion.div>
 
         {/* Footer Links */}
