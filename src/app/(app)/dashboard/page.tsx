@@ -150,6 +150,7 @@ export default function Dashboard() {
             {isRefreshing ? "..." : "Refresh"}
           </button>
         </div>
+      </motion.div>
       {/* ── MARKET PULSE HERO ── */}
       <motion.div custom={1} variants={fade} initial="hidden" animate="visible"
         className="glass-card overflow-hidden p-6 relative border border-white/10">
