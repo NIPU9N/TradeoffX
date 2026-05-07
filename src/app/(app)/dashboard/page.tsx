@@ -472,44 +472,6 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-            {/* Win Rate */}
-            <div className="bg-[#11131A]/90 backdrop-blur-xl rounded-[24px] p-6 border border-white/5 flex items-center justify-between shadow-lg hover:border-white/10 transition-colors">
-               <div className="flex flex-col justify-between h-full">
-                  <h3 className="text-gray-400 font-medium text-sm flex items-center gap-2 mb-4">
-                    <Target className="w-4 h-4 text-blue-400" /> Win Rate
-                  </h3>
-                  <div className="flex flex-col justify-end h-full">
-                    <p className="text-3xl font-bold text-white drop-shadow-sm leading-none mb-1">{stats?.win_rate || 0}%</p>
-                    <p className="text-xs text-gray-400 mt-1 font-medium">{stats?.total_decisions || 0} Trades Total</p>
-                  </div>
-               </div>
-               <div className="flex items-end h-full pb-1">
-                 <WinRing rate={stats?.win_rate || 0} color={hexColor} />
-               </div>
-            </div>
-
-            {/* Day Streak */}
-            <div className="bg-[#11131A]/90 backdrop-blur-xl rounded-[24px] p-6 border border-white/5 flex flex-col justify-between relative overflow-hidden group shadow-lg hover:border-white/10 transition-colors">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-gray-400 font-medium text-sm flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-rose-500" /> Day Streak
-                </h3>
-              </div>
-              <div className="relative z-10 flex flex-col justify-end h-full">
-                <div className="flex items-baseline gap-1.5 mb-2">
-                  <p className="text-4xl font-bold text-white leading-none drop-shadow-sm">{stats?.current_streak || 0}</p>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Days</p>
-                </div>
-                <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                  {stats?.current_streak && stats.current_streak > 0 ? "Consistent logging builds edge." : "Start logging to build streak."}
-                </p>
-              </div>
-              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-rose-500 opacity-[0.03] group-hover:opacity-10 transition-opacity rounded-full blur-2xl" />
-            </div>
-
-          </motion.div>
-        </div>
-
         {/* BOTTOM ROW - Portfolio & Watchlist */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
