@@ -14,27 +14,52 @@ import {
   Music,
   ShoppingCart,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Brain,
+  Target,
+  Flame
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { fetchDashboard, getDecisions, getWatchlist, getPracticePortfolio, getPracticePositions } from "@/lib/api";
 import type { DashboardStats, WatchlistItem, Decision, PracticePosition, PracticePortfolio } from "@/types";
+import { motion } from "framer-motion";
+
+const fade = {
+  hidden: { opacity: 0, y: 15 },
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.4, ease: "easeOut" } }),
+};
+
+// Win rate ring SVG component
+function WinRing({ rate, color }: { rate: number, color: string }) {
+  const r = 36, circ = 2 * Math.PI * r;
+  return (
+    <svg width="90" height="90" viewBox="0 0 90 90" className="-rotate-90">
+      <circle cx="45" cy="45" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
+      <circle cx="45" cy="45" r={r} fill="none" stroke={color} strokeWidth="8"
+        strokeDasharray={circ} strokeDashoffset={circ * (1 - rate / 100)}
+        strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+    </svg>
+  );
+}
 
 export default function Dashboard() {
   const { mode } = useMode();
   const isPractice = mode === "practice";
 
-  // Accent colors based on mode (Green for Practice, Blue for Real)
   const primaryBg = isPractice ? "bg-[#10B981]" : "bg-[#0066FF]";
   const primaryText = isPractice ? "text-[#10B981]" : "text-[#0066FF]";
   const primaryStroke = isPractice ? "#10B981" : "#0066FF";
+  const hexColor = isPractice ? "#10B981" : "#0066FF";
 
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [practicePortfolio, setPracticePortfolio] = useState<PracticePortfolio | null>(null);
   const [practicePositions, setPracticePositions] = useState<PracticePosition[]>([]);
+  
+  const [watchlistFilter, setWatchlistFilter] = useState<"All" | "Watching" | "Bought">("All");
+  const [portfolioFilter, setPortfolioFilter] = useState<"All" | "Gainers" | "Losers">("All");
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -87,33 +112,61 @@ export default function Dashboard() {
       const oc = Array.isArray(d.outcome) ? d.outcome[0] : d.outcome;
       return sum + (oc?.actual_return_percent || 0);
     }, 0) / closed.length;
-    return { pct, amt: 0 };
+    
+    const amt = closed.reduce((sum, d) => {
+      const oc = Array.isArray(d.outcome) ? d.outcome[0] : d.outcome;
+      return sum + (oc?.actual_return_amount || 0);
+    }, 0);
+    return { pct, amt };
   }, [isPractice, practicePortfolio, stats]);
 
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] gap-4">
-        <Loader2 className="w-10 h-10 text-[#0066FF] animate-spin" />
+        <Loader2 className={cn("w-10 h-10 animate-spin", primaryText)} />
         <p className="text-gray-400 text-sm tracking-widest uppercase">Loading Dashboard...</p>
       </div>
     );
   }
 
+  const filteredWatchlist = watchlist.filter(item => {
+    if (watchlistFilter === "All") return true;
+    if (watchlistFilter === "Watching") return item.status !== "bought";
+    if (watchlistFilter === "Bought") return item.status === "bought";
+    return true;
+  });
+
+  const portfolioItems = (isPractice ? practicePositions : stats?.recent_decisions || []).map((item: any) => {
+    const isUp = isPractice ? item.return_percent >= 0 : ((Array.isArray(item.outcome) ? item.outcome[0] : item.outcome)?.actual_return_percent || 0) >= 0;
+    const changePct = isPractice ? item.return_percent : ((Array.isArray(item.outcome) ? item.outcome[0] : item.outcome)?.actual_return_percent || 0);
+    const changeAmt = isPractice ? item.return_amount : ((Array.isArray(item.outcome) ? item.outcome[0] : item.outcome)?.actual_return_amount || 0);
+    const entryPrice = isPractice ? item.entry_price : (Array.isArray(item.outcome) ? item.outcome[0] : item.outcome)?.entry_price || 0;
+    const currentPrice = isPractice ? item.current_price : (Array.isArray(item.outcome) ? item.outcome[0] : item.outcome)?.exit_price || 0;
+    const qty = isPractice ? item.quantity : 1;
+    const invAmt = isPractice ? (entryPrice * qty) : item.investment_amount;
+    
+    return { ...item, isUp, changePct, changeAmt, entryPrice, currentPrice, qty, invAmt };
+  }).filter((item: any) => {
+    if (portfolioFilter === "All") return true;
+    if (portfolioFilter === "Gainers") return item.isUp;
+    if (portfolioFilter === "Losers") return !item.isUp;
+    return true;
+  });
+
   return (
-    <div className="min-h-screen bg-[#07090E] p-4 sm:p-6 lg:p-8 font-sans text-white pb-24">
+    <div className="min-h-screen bg-[#07090E] p-4 sm:p-6 lg:p-8 font-sans text-white pb-24 overflow-hidden">
       <div className="max-w-[1400px] mx-auto space-y-6">
         
         {/* TOP ROW */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Total Holding */}
-          <div className="lg:col-span-1 bg-[#11131A] rounded-[24px] p-6 border border-white/5 relative overflow-hidden flex flex-col justify-between min-h-[220px]">
-            {/* Subtle background wave/gradient */}
+          <motion.div custom={1} variants={fade} initial="hidden" animate="visible" className="lg:col-span-1 bg-[#11131A] rounded-[24px] p-6 border border-white/5 relative overflow-hidden flex flex-col justify-between min-h-[220px]">
             <div className="absolute inset-0 opacity-20 pointer-events-none">
               <div className="absolute -top-24 -left-24 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
             </div>
             
             <div className="relative z-10 flex items-start justify-between">
-              <h3 className="text-gray-400 font-medium">Total Holding</h3>
+              <h3 className="text-gray-400 font-medium">{isPractice ? "Total Deployed Capital" : "Total Tracked Capital"}</h3>
               <div className="flex gap-2">
                 <button className="px-4 py-1.5 rounded-full border border-white/20 text-xs font-medium hover:bg-white/5 transition">6M</button>
                 <button className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center hover:bg-white/5 transition">
@@ -137,58 +190,74 @@ export default function Dashboard() {
                 </span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          {/* My Portfolio */}
-          <div className="lg:col-span-2 bg-[#11131A] rounded-[24px] p-6 border border-white/5 flex flex-col justify-between min-h-[220px]">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-gray-400 font-medium">My Portfolio</h3>
-              <div className="flex gap-2">
-                <button className="px-5 py-1.5 rounded-full border border-white/20 text-xs font-medium hover:bg-white/5 transition">See all</button>
-                <button className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center hover:bg-white/5 transition">
-                  <ArrowUpRight className="w-4 h-4" />
-                </button>
+          {/* Behavior Intelligence Grid */}
+          <motion.div custom={2} variants={fade} initial="hidden" animate="visible" className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            {/* Biggest Bias */}
+            <div className="bg-[#11131A] rounded-[24px] p-6 border border-white/5 flex flex-col justify-between relative overflow-hidden group">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-400 font-medium text-sm flex items-center gap-2">
+                  <Brain className="w-4 h-4 text-orange-400" /> Biggest Bias
+                </h3>
               </div>
+              <div>
+                <p className="text-2xl font-bold text-white uppercase tracking-tight leading-none mb-2">
+                  {stats?.top_bias === "none" ? "CLEAN" : stats?.top_bias?.split("_").join(" ") || "N/A"}
+                </p>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  {stats?.top_bias === "none"
+                    ? "No behavioral leaks detected."
+                    : `Detected in ${stats?.bias_breakdown[stats?.top_bias] || 0} recent trades.`}
+                </p>
+              </div>
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-orange-500 opacity-[0.03] group-hover:opacity-10 transition-opacity rounded-full blur-2xl" />
             </div>
 
-            {/* Horizontal scrollable cards */}
-            <div className="flex items-center gap-4 overflow-x-auto pb-2 hide-scrollbar">
-              {(isPractice ? practicePositions : stats?.recent_decisions.map(d => ({
-                asset_name: d.asset_name,
-                current_value: d.investment_amount,
-                return_percent: (Array.isArray(d.outcome) ? d.outcome[0] : d.outcome)?.actual_return_percent || 0,
-                quantity: 1,
-              })) || []).map((item: any, i: number) => {
-                const isUp = item.return_percent >= 0;
-                return (
-                  <div key={i} className="bg-[#1A1C23] rounded-[16px] p-4 min-w-[140px] flex-shrink-0 border border-white/5 hover:border-white/10 transition-colors">
-                    <div className="mb-4">
-                      <p className="text-sm font-semibold mb-1">₹ {item.current_value?.toLocaleString("en-IN") || item.investment_amount?.toLocaleString("en-IN") || 0}</p>
-                      <p className={cn("text-[10px] font-medium", isUp ? "text-emerald-500" : "text-red-500")}>
-                        {isUp ? "+" : ""}{item.return_percent?.toFixed(2) || "0.00"}%
-                      </p>
-                    </div>
-                    <div className="flex items-end justify-between mt-6">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-white/5 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-bold text-gray-300">{item.asset_name.charAt(0)}</span>
-                        </div>
-                        <span className="text-xs font-bold text-gray-300 truncate max-w-[60px]">{item.asset_name}</span>
-                      </div>
-                      <span className="text-[10px] text-gray-500">Qty {item.quantity || 1}</span>
-                    </div>
+            {/* Win Rate */}
+            <div className="bg-[#11131A] rounded-[24px] p-6 border border-white/5 flex items-center justify-between">
+               <div className="flex flex-col justify-between h-full">
+                  <h3 className="text-gray-400 font-medium text-sm flex items-center gap-2 mb-4">
+                    <Target className="w-4 h-4 text-blue-400" /> Win Rate
+                  </h3>
+                  <div>
+                    <p className="text-3xl font-bold text-white">{stats?.win_rate || 0}%</p>
+                    <p className="text-xs text-gray-500 mt-1">{stats?.total_decisions || 0} Trades Total</p>
                   </div>
-                );
-              })}
-              {(!isPractice && !stats?.recent_decisions.length) || (isPractice && !practicePositions.length) ? (
-                <p className="text-gray-500 text-sm">No positions to show.</p>
-              ) : null}
+               </div>
+               <div className="relative">
+                 <WinRing rate={stats?.win_rate || 0} color={hexColor} />
+                 <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xs font-bold text-white">{stats?.win_rate || 0}%</span>
+                 </div>
+               </div>
             </div>
-          </div>
+
+            {/* Day Streak */}
+            <div className="bg-[#11131A] rounded-[24px] p-6 border border-white/5 flex flex-col justify-between relative overflow-hidden group">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-400 font-medium text-sm flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-rose-500" /> Day Streak
+                </h3>
+              </div>
+              <div>
+                <div className="flex items-end gap-2">
+                  <p className="text-4xl font-bold text-white leading-none">{stats?.day_streak || 0}</p>
+                  <p className="text-sm text-gray-500 mb-1">Days</p>
+                </div>
+                <p className="text-xs text-gray-500 leading-relaxed mt-2">
+                  {stats?.day_streak ? "Consistent logging builds edge." : "Start logging to build streak."}
+                </p>
+              </div>
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-rose-500 opacity-[0.03] group-hover:opacity-10 transition-opacity rounded-full blur-2xl" />
+            </div>
+
+          </motion.div>
         </div>
 
         {/* MIDDLE ROW: Portfolio Performance */}
-        <div className="bg-[#11131A] rounded-[24px] p-6 border border-white/5">
+        <motion.div custom={3} variants={fade} initial="hidden" animate="visible" className="bg-[#11131A] rounded-[24px] p-6 border border-white/5">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-gray-400 font-medium">Portfolio Performance</h3>
             <div className="flex gap-2">
@@ -253,15 +322,14 @@ export default function Dashboard() {
               <svg viewBox="0 0 1000 240" className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={primaryStroke} stopOpacity="0.3" />
-                    <stop offset="100%" stopColor={primaryStroke} stopOpacity="0" />
+                    <stop offset="0%" stopColor={hexColor} stopOpacity="0.3" />
+                    <stop offset="100%" stopColor={hexColor} stopOpacity="0" />
                   </linearGradient>
                 </defs>
-                {/* A squiggly line resembling the image */}
                 <path 
                   d="M0,20 C50,20 80,60 120,60 C160,60 180,40 220,50 C260,60 300,50 350,120 C400,190 420,70 450,110 C480,150 500,60 550,50 C600,40 650,70 700,50 C750,30 800,100 850,90 C900,80 950,140 1000,150" 
                   fill="none" 
-                  stroke={primaryStroke} 
+                  stroke={hexColor} 
                   strokeWidth="3" 
                   strokeLinecap="round" 
                   strokeLinejoin="round" 
@@ -291,21 +359,22 @@ export default function Dashboard() {
               <span>15th Jul</span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* BOTTOM ROW */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Portfolio Overview */}
-          <div className="lg:col-span-2 bg-[#11131A] rounded-[24px] p-6 border border-white/5">
+          <motion.div custom={4} variants={fade} initial="hidden" animate="visible" className="lg:col-span-2 bg-[#11131A] rounded-[24px] p-6 border border-white/5">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-gray-400 font-medium">Portfolio Overview</h3>
               <div className="flex bg-[#1A1C23] rounded-full p-1 border border-white/5">
-                {["All", "Gainers", "Losers"].map((btn) => (
+                {["All", "Gainers", "Losers"].map((btn: any) => (
                   <button 
                     key={btn}
+                    onClick={() => setPortfolioFilter(btn)}
                     className={cn(
                       "px-6 py-1.5 rounded-full text-xs font-medium transition-colors",
-                      btn === "All" ? `${primaryBg} text-white` : "text-gray-400 hover:text-white"
+                      portfolioFilter === btn ? `${primaryBg} text-white` : "text-gray-400 hover:text-white"
                     )}
                   >
                     {btn}
@@ -319,71 +388,63 @@ export default function Dashboard() {
                 <thead>
                   <tr className="text-gray-500 text-xs font-medium border-b border-white/5">
                     <th className="pb-4 font-normal pl-2">Stock</th>
-                    <th className="pb-4 font-normal">Last Price ↑↓</th>
-                    <th className="pb-4 font-normal">Change ↑↓</th>
-                    <th className="pb-4 font-normal">Market Cap ↑↓</th>
-                    <th className="pb-4 font-normal">Volume ↑↓</th>
-                    <th className="pb-4 font-normal text-right pr-4">Last 7 days ↑↓</th>
+                    <th className="pb-4 font-normal">Entry Price</th>
+                    <th className="pb-4 font-normal">CMP/Exit</th>
+                    <th className="pb-4 font-normal">Qty</th>
+                    <th className="pb-4 font-normal">Inv. Amount</th>
+                    <th className="pb-4 font-normal text-right pr-4">P&L</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {(isPractice ? practicePositions : stats?.recent_decisions || []).slice(0, 5).map((item: any, i: number) => {
-                    const isUp = isPractice ? item.return_percent >= 0 : ((Array.isArray(item.outcome) ? item.outcome[0] : item.outcome)?.actual_return_percent || 0) >= 0;
-                    const change = isPractice ? item.return_percent : ((Array.isArray(item.outcome) ? item.outcome[0] : item.outcome)?.actual_return_percent || 0);
+                  {portfolioItems.slice(0, 5).map((item: any, i: number) => {
                     return (
                       <tr key={i} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                         <td className="py-4 pl-2">
                           <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center">
-                              <span className="text-xs font-bold text-gray-400">{item.asset_name.charAt(0)}</span>
+                            <div className="w-8 h-8 rounded-full bg-[#1A1C23] flex items-center justify-center border border-white/5">
+                              <span className="text-xs font-bold text-gray-400 uppercase">{item.asset_name.charAt(0)}</span>
                             </div>
-                            <span className="font-bold">{item.asset_name}</span>
+                            <span className="font-bold text-gray-200">{item.asset_name}</span>
                           </div>
                         </td>
-                        <td className="py-4 font-semibold">₹ {item.current_price?.toLocaleString("en-IN") || item.investment_amount?.toLocaleString("en-IN") || 0}</td>
-                        <td className={cn("py-4 text-xs font-medium", isUp ? "text-emerald-500" : "text-red-500")}>
-                          {isUp ? "+" : ""}{change?.toFixed(2) || "0.00"}%
-                        </td>
-                        <td className="py-4 text-gray-300 text-xs">-</td>
-                        <td className="py-4 text-gray-300 text-xs">Qty {item.quantity || 1}</td>
-                        <td className="py-4 pr-4">
-                          <div className="w-16 h-6 ml-auto">
-                            {isUp ? (
-                              <svg viewBox="0 0 100 30" className="w-full h-full overflow-visible">
-                                <path d="M0,20 Q10,25 20,15 T40,20 T60,10 T80,15 T100,5" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" />
-                                <circle cx="100" cy="5" r="3" fill="#10B981" />
-                              </svg>
-                            ) : (
-                              <svg viewBox="0 0 100 30" className="w-full h-full overflow-visible">
-                                <path d="M0,5 Q10,10 20,5 T40,15 T60,10 T80,20 T100,25" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" />
-                                <circle cx="100" cy="25" r="3" fill="#EF4444" />
-                              </svg>
-                            )}
+                        <td className="py-4 text-gray-300">₹ {item.entryPrice?.toLocaleString("en-IN") || "--"}</td>
+                        <td className="py-4 text-gray-300">₹ {item.currentPrice?.toLocaleString("en-IN") || "--"}</td>
+                        <td className="py-4 text-gray-400 text-xs">Qty {item.qty}</td>
+                        <td className="py-4 font-semibold text-gray-200">₹ {item.invAmt?.toLocaleString("en-IN") || "0"}</td>
+                        <td className="py-4 pr-4 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className={cn("text-sm font-semibold", item.isUp ? "text-emerald-500" : "text-red-500")}>
+                              {item.isUp ? "+" : ""}₹ {item.changeAmt?.toLocaleString("en-IN") || "0"}
+                            </span>
+                            <span className={cn("text-[10px] font-medium", item.isUp ? "text-emerald-500" : "text-red-500")}>
+                              {item.isUp ? "+" : ""}{item.changePct?.toFixed(2) || "0.00"}%
+                            </span>
                           </div>
                         </td>
                       </tr>
                     );
                   })}
-                  {((isPractice && practicePositions.length === 0) || (!isPractice && !stats?.recent_decisions.length)) && (
+                  {portfolioItems.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-gray-500 text-sm">No data available</td>
+                      <td colSpan={6} className="py-8 text-center text-gray-500 text-sm italic">No investments logged yet.</td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
-          </div>
+          </motion.div>
 
           {/* Watchlist */}
-          <div className="lg:col-span-1 bg-[#11131A] rounded-[24px] p-6 border border-white/5">
+          <motion.div custom={5} variants={fade} initial="hidden" animate="visible" className="lg:col-span-1 bg-[#11131A] rounded-[24px] p-6 border border-white/5">
             <h3 className="text-gray-400 font-medium mb-6">Watchlist</h3>
             <div className="flex bg-[#1A1C23] rounded-full p-1 border border-white/5 mb-6">
-              {["Most Viewed", "Gainers", "Losers"].map((btn) => (
+              {["All", "Watching", "Bought"].map((btn: any) => (
                 <button 
                   key={btn}
+                  onClick={() => setWatchlistFilter(btn)}
                   className={cn(
                     "flex-1 py-1.5 rounded-full text-[11px] font-medium transition-colors",
-                    btn === "Most Viewed" ? `${primaryBg} text-white` : "text-gray-400 hover:text-white"
+                    watchlistFilter === btn ? `${primaryBg} text-white` : "text-gray-400 hover:text-white"
                   )}
                 >
                   {btn}
@@ -392,23 +453,23 @@ export default function Dashboard() {
             </div>
 
             <div className="space-y-4">
-              {watchlist.slice(0, 5).map((item) => {
+              {filteredWatchlist.slice(0, 5).map((item) => {
                 const diff = (item.current_price || 0) - (item.price_when_added || 0);
                 const pct = item.price_when_added ? (diff / item.price_when_added) * 100 : 0;
                 const isUp = pct >= 0;
                 return (
-                  <div key={item.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/[0.03] transition-colors cursor-pointer">
+                  <div key={item.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-[#1A1C23] transition-colors cursor-pointer border border-transparent hover:border-white/5">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#1A1C23] flex items-center justify-center font-bold text-gray-400">
+                      <div className="w-10 h-10 rounded-full bg-[#1A1C23] flex items-center justify-center font-bold text-gray-400 border border-white/5">
                         {item.asset_name.charAt(0)}
                       </div>
                       <div>
-                        <p className="text-sm font-bold truncate max-w-[100px]">{item.asset_name}</p>
-                        <p className="text-[10px] text-gray-500 uppercase">{item.asset_type}</p>
+                        <p className="text-sm font-bold truncate max-w-[120px] text-gray-200">{item.asset_name}</p>
+                        <p className="text-[10px] text-gray-500 uppercase">{item.asset_type || "EQUITY"}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold">₹ {item.current_price?.toLocaleString("en-IN") || "--"}</p>
+                      <p className="text-sm font-bold text-gray-200">₹ {item.current_price?.toLocaleString("en-IN") || "--"}</p>
                       <p className={cn("text-[10px] font-medium", isUp ? "text-emerald-500" : "text-red-500")}>
                         {isUp ? "+" : ""}{pct.toFixed(2)}%
                       </p>
@@ -416,11 +477,14 @@ export default function Dashboard() {
                   </div>
                 );
               })}
-              {watchlist.length === 0 && (
-                <p className="text-gray-500 text-sm text-center py-4">Watchlist is empty</p>
+              {filteredWatchlist.length === 0 && (
+                <div className="py-12 flex flex-col items-center justify-center opacity-50">
+                  <Search className="w-8 h-8 text-gray-500 mb-2" />
+                  <p className="text-gray-500 text-sm text-center">Watchlist is empty</p>
+                </div>
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
 
       </div>
