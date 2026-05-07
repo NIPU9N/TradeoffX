@@ -1,6 +1,6 @@
 "use client";
 
-import { useMode } from "@/components/ModeContext";
+import { useMode } from "@/context/ModeContext";
 import { 
   Apple, 
   Car, 
