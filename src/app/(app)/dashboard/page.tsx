@@ -243,11 +243,11 @@ export default function Dashboard() {
               </div>
               <div>
                 <div className="flex items-end gap-2">
-                  <p className="text-4xl font-bold text-white leading-none">{stats?.day_streak || 0}</p>
+                  <p className="text-4xl font-bold text-white leading-none">{stats?.current_streak || 0}</p>
                   <p className="text-sm text-gray-500 mb-1">Days</p>
                 </div>
                 <p className="text-xs text-gray-500 leading-relaxed mt-2">
-                  {stats?.day_streak ? "Consistent logging builds edge." : "Start logging to build streak."}
+                  {stats?.current_streak ? "Consistent logging builds edge." : "Start logging to build streak."}
                 </p>
               </div>
               <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-rose-500 opacity-[0.03] group-hover:opacity-10 transition-opacity rounded-full blur-2xl" />
