@@ -155,8 +155,8 @@ export default function Dashboard() {
       <motion.div custom={1} variants={fade} initial="hidden" animate="visible"
         className="glass-card overflow-hidden p-6 relative border border-white/10">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-tx-primary/20 via-transparent to-emerald-400/10 blur-3xl" />
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-          <div className="flex-1 flex flex-col justify-center pr-0 xl:pr-8 py-4">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex-1 flex flex-col pr-0 xl:pr-8 py-2">
             <div className="flex items-center gap-3 mb-5">
               <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -268,10 +268,23 @@ export default function Dashboard() {
                     <stop offset="0%" stopColor="#4EA8FF" stopOpacity="0.9" />
                     <stop offset="100%" stopColor="#82E3A7" stopOpacity="0.5" />
                   </linearGradient>
+                  <linearGradient id="fillGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#4EA8FF" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="#82E3A7" stopOpacity="0" />
+                  </linearGradient>
                 </defs>
+                {/* Gridlines */}
+                <path d="M0 55 L360 55" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
+                <path d="M0 110 L360 110" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
+                <path d="M0 165 L360 165" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
+                
+                {/* Area Fill & Line */}
+                <path d="M0 180 C 70 190 120 90 170 120 C 220 150 280 60 360 90 L 360 220 L 0 220 Z" fill="url(#fillGradient)" />
                 <path d="M0 180 C 70 190 120 90 170 120 C 220 150 280 60 360 90" fill="none" stroke="url(#dashGradient)" strokeWidth="4" strokeLinecap="round" />
+                
+                {/* Data Points */}
                 <circle cx="0" cy="180" r="5" fill="#4EA8FF" />
-                <circle cx="170" cy="120" r="6" fill="#82E3A7" />
+                <circle cx="170" cy="120" r="6" fill="#82E3A7" className="animate-pulse" />
                 <circle cx="360" cy="90" r="5" fill="#38BDF8" />
               </svg>
               <div className="absolute inset-x-0 bottom-0 flex justify-between px-3 pb-4 text-[11px] text-tx-text-secondary">
@@ -283,7 +296,7 @@ export default function Dashboard() {
                 { label: "Calm execution", value: `${100 - stats.emotion_score}%`, accent: "emerald" },
                 { label: "Bias control", value: `${stats.logic_score}%`, accent: "cyan" },
                 { label: "Win momentum", value: `${stats.win_rate}%`, accent: "blue" },
-                { label: "Review load", value: `${stats.pending_reviews.length}`, accent: "amber" },
+                { label: "Total Trades", value: `${stats.total_decisions}`, accent: "amber" },
               ].map((block) => (
                 <div key={block.label} className="rounded-3xl bg-slate-950/80 p-3 border border-white/10">
                   <div className="flex items-center justify-between mb-3">
@@ -291,7 +304,7 @@ export default function Dashboard() {
                     <span className={cn("text-xs font-semibold", block.accent === "amber" ? "text-orange-400" : block.accent === "emerald" ? "text-emerald-400" : block.accent === "cyan" ? "text-cyan-400" : "text-blue-400")}>{block.value}</span>
                   </div>
                   <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                    <div className={cn("h-full rounded-full transition-width duration-700", block.accent === "amber" ? "bg-orange-400" : block.accent === "emerald" ? "bg-emerald-400" : block.accent === "cyan" ? "bg-cyan-400" : "bg-blue-400")} style={{ width: block.value }} />
+                    <div className={cn("h-full rounded-full transition-width duration-700", block.accent === "amber" ? "bg-orange-400" : block.accent === "emerald" ? "bg-emerald-400" : block.accent === "cyan" ? "bg-cyan-400" : "bg-blue-400")} style={{ width: block.label === 'Total Trades' ? `${Math.min(100, Number(block.value) * 5)}%` : block.value }} />
                   </div>
                 </div>
               ))}
@@ -299,71 +312,6 @@ export default function Dashboard() {
           </div>
         </div>
       </motion.div>
-
-      {/* ── KPI CARDS ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Decisions Logged */}
-        <motion.div custom={2} variants={fade} initial="hidden" animate="visible"
-          className="glass-card p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300 cursor-default">
-          <div className="flex items-start justify-between mb-3">
-            <div className="p-2 rounded-lg bg-tx-primary/10">
-              <BookOpen className="w-4 h-4 text-tx-primary" />
-            </div>
-            <Sparkline up={true} />
-          </div>
-          <p className="text-tx-text-secondary text-xs mb-1">Decisions Logged</p>
-          <p className="font-mono text-4xl font-bold text-white">{stats.total_decisions}</p>
-          <p className="text-tx-primary text-xs mt-1 font-medium">Logged &amp; Locked</p>
-          <div className="absolute -bottom-8 -right-8 w-28 h-28 bg-tx-primary opacity-5 rounded-full blur-2xl group-hover:opacity-10 transition-opacity" />
-        </motion.div>
-
-        {/* Win Rate */}
-        <motion.div custom={3} variants={fade} initial="hidden" animate="visible"
-          className="glass-card p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300 cursor-default">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <p className="text-tx-text-secondary text-xs mb-1">Win Rate</p>
-              <p className="font-mono text-4xl font-bold text-white">{stats.win_rate}%</p>
-              <p className="text-xs mt-1 text-tx-text-muted">
-                {stats.win_rate > 50 ? "Beating the odds" : stats.win_rate === 0 ? "Log trades to track" : "Room to improve"}
-              </p>
-            </div>
-            <div className="relative flex-shrink-0">
-              <WinRing rate={stats.win_rate} />
-              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-tx-primary rotate-90">{stats.win_rate}%</span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Day Streak */}
-        <motion.div custom={4} variants={fade} initial="hidden" animate="visible"
-          className="glass-card p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300 cursor-default">
-          <div className="flex items-start justify-between mb-3">
-            <div className="p-2 rounded-lg bg-orange-500/10">
-              <Flame className="w-4 h-4 text-orange-400" />
-            </div>
-          </div>
-          <p className="text-tx-text-secondary text-xs mb-1">Day Streak</p>
-          <p className="font-mono text-4xl font-bold text-orange-400">{stats.current_streak}</p>
-          <p className="text-tx-text-muted text-xs mt-1">Longest: {stats.longest_streak} days</p>
-          <div className="absolute -bottom-8 -right-8 w-28 h-28 bg-orange-500 opacity-5 rounded-full blur-2xl" />
-        </motion.div>
-
-        {/* Logic Score */}
-        <motion.div custom={5} variants={fade} initial="hidden" animate="visible"
-          className="glass-card p-6 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300 cursor-default">
-          <div className="flex items-start justify-between mb-3">
-            <div className="p-2 rounded-lg bg-tx-secondary/10">
-              <Brain className="w-4 h-4 text-tx-secondary" />
-            </div>
-            <Sparkline up={stats.logic_score > 50} />
-          </div>
-          <p className="text-tx-text-secondary text-xs mb-1">Logic-Driven</p>
-          <p className="font-mono text-4xl font-bold text-tx-secondary">{stats.logic_score}%</p>
-          <p className="text-tx-text-muted text-xs mt-1">{stats.emotion_score}% still emotional</p>
-          <div className="absolute -bottom-8 -right-8 w-28 h-28 bg-tx-secondary opacity-5 rounded-full blur-2xl" />
-        </motion.div>
-      </div>
 
       {/* ── MAIN CONTENT GRID ── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
