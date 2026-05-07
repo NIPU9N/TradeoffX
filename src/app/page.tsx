@@ -659,46 +659,69 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
               viewport={{ once: true }}
-              className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/50 rounded-2xl p-8"
+              className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6"
             >
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-bold text-white">Iron Condor Setup</h3>
-                <div className="text-right">
-                  <p className="text-sm text-slate-400">Max Profit</p>
-                  <p className="text-3xl font-bold text-emerald-400">₹4,500</p>
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-4 mb-6">
+                <h3 className="text-xl font-bold text-white">Iron Condor Setup</h3>
+                <div className="text-slate-400 text-sm">
+                  Max Profit: ₹4,500
                 </div>
               </div>
 
               {/* Payoff Chart */}
-              <div className="mb-8">
-                <div className="h-48 bg-slate-900/50 rounded-lg p-4 flex items-end justify-around mb-4">
-                  {[18, 40, 75, 82, 65, 35, 12, 5].map((height, idx) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ scaleY: 0 }}
-                      whileInView={{ scaleY: 1 }}
-                      transition={{ delay: idx * 0.08 }}
-                      className={`flex-1 mx-1 rounded-t ${height > 50 ? "bg-blue-500" : "bg-slate-600"}`}
-                      style={{ height: `${height}%` }}
-                    />
-                  ))}
+              <div className="relative h-64 mb-6">
+                {/* Y Axis Labels */}
+                <div className="absolute left-0 top-0 bottom-6 w-10 text-xs text-slate-400 font-medium">
+                  <span className="absolute left-0 -translate-y-1/2" style={{ top: '16.66%' }}>4000</span>
+                  <span className="absolute left-0 -translate-y-1/2" style={{ top: '44.33%' }}>2000</span>
+                  <span className="absolute left-0 -translate-y-1/2" style={{ top: '72.33%' }}>0</span>
+                  <span className="absolute left-0 -translate-y-1/2" style={{ top: '100%' }}>-2000</span>
                 </div>
-                <div className="flex justify-between text-xs text-slate-400">
-                  <span>18k</span>
-                  <span>18.5k</span>
-                  <span>19k</span>
-                  <span>19.5k</span>
-                  <span>20k</span>
+
+                {/* Chart Area */}
+                <div className="absolute inset-0 ml-12 mb-6">
+                  <svg viewBox="0 0 1000 300" className="w-full h-full" preserveAspectRatio="none">
+                    <line x1="0" y1="50" x2="1000" y2="50" stroke="#334155" strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
+                    <line x1="0" y1="133" x2="1000" y2="133" stroke="#334155" strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
+                    <line x1="0" y1="217" x2="1000" y2="217" stroke="#475569" strokeWidth="1" opacity="0.8" />
+                    
+                    <path 
+                      d="M 0,217 L 0,300 C 50,300 150,29 250,29 C 350,29 400,50 500,50 C 600,50 650,29 750,29 C 850,29 950,300 1000,300 L 1000,217 Z" 
+                      fill="url(#gradientBlue)" 
+                      opacity="0.4"
+                    />
+                    <path 
+                      d="M 0,300 C 50,300 150,29 250,29 C 350,29 400,50 500,50 C 600,50 650,29 750,29 C 850,29 950,300 1000,300" 
+                      fill="none" 
+                      stroke="#3b82f6" 
+                      strokeWidth="3"
+                    />
+                    <defs>
+                      <linearGradient id="gradientBlue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
+
+                {/* X Axis Labels */}
+                <div className="absolute bottom-0 left-12 right-0 h-6 text-xs text-slate-400 font-medium">
+                  <span className="absolute top-2" style={{ left: '0%' }}>18k</span>
+                  <span className="absolute top-2 -translate-x-1/2" style={{ left: '25%' }}>18.5k</span>
+                  <span className="absolute top-2 -translate-x-1/2" style={{ left: '50%' }}>19k</span>
+                  <span className="absolute top-2 -translate-x-1/2" style={{ left: '75%' }}>19.5k</span>
+                  <span className="absolute top-2 -translate-x-full" style={{ left: '100%' }}>20k</span>
                 </div>
               </div>
 
               {/* Greeks Display */}
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-3">
                 {[
-                  { label: "Delta", value: "0.12", color: "text-blue-400" },
-                  { label: "Gamma", value: "-0.05", color: "text-red-400" },
+                  { label: "Delta", value: "0.12", color: "text-white" },
+                  { label: "Gamma", value: "-0.05", color: "text-white" },
                   { label: "Theta", value: "+12.4", color: "text-emerald-400" },
-                  { label: "Vega", value: "-8.2", color: "text-slate-400" }
+                  { label: "Vega", value: "-8.2", color: "text-red-400" }
                 ].map((greek, idx) => (
                   <motion.div
                     key={idx}
@@ -706,10 +729,10 @@ export default function LandingPage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.1 }}
                     viewport={{ once: true }}
-                    className="bg-slate-900/50 rounded-lg p-4 text-center border border-slate-700/50"
+                    className="bg-slate-900/50 rounded-lg p-3 text-center border border-slate-700/50"
                   >
-                    <p className="text-xs text-slate-400 mb-2 uppercase">{greek.label}</p>
-                    <p className={`text-2xl font-bold ${greek.color}`}>{greek.value}</p>
+                    <p className="text-xs text-slate-400 mb-1">{greek.label}</p>
+                    <p className={`text-sm font-bold ${greek.color}`}>{greek.value}</p>
                   </motion.div>
                 ))}
               </div>
