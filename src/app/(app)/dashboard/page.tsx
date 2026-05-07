@@ -1,543 +1,345 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
-import {
-  BookOpen, Brain, ArrowUpRight, ArrowDownRight, ChevronRight,
-  AlertCircle, RefreshCw, Loader2, Eye, TrendingUp, TrendingDown,
-  Flame, Target, BarChart3, Clock, CheckCircle2, Filter
+import { useMode } from "@/components/ModeContext";
+import { 
+  Apple, 
+  Car, 
+  LayoutGrid, 
+  Search, 
+  Cpu, 
+  TrendingUp, 
+  TrendingDown, 
+  ArrowUpRight, 
+  MoreHorizontal,
+  Music,
+  ShoppingCart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fetchDashboard, getWatchlist } from "@/lib/api";
-import type { DashboardStats, WatchlistItem } from "@/types";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useMode } from "@/context/ModeContext";
-
-const fade = {
-  hidden: { opacity: 0, y: 16 },
-  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.07, type: "spring" as const, stiffness: 260, damping: 24 } }),
-};
-
-// Mini sparkline SVG
-function Sparkline({ up }: { up: boolean }) {
-  const pts = up
-    ? "0,28 12,22 24,25 36,15 48,18 60,10 72,14 84,6 96,9 108,2"
-    : "0,4 12,10 24,7 36,18 48,14 60,22 72,19 84,26 96,23 108,30";
-  return (
-    <svg width="108" height="32" viewBox="0 0 108 32" fill="none">
-      <defs>
-        <linearGradient id={`sg${up}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={up ? "#4EA8FF" : "#FF4D4D"} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={up ? "#4EA8FF" : "#FF4D4D"} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polyline points={pts} fill="none" stroke={up ? "#4EA8FF" : "#FF4D4D"} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-// Win rate ring
-function WinRing({ rate }: { rate: number }) {
-  const r = 22, circ = 2 * Math.PI * r;
-  return (
-    <svg width="56" height="56" viewBox="0 0 56 56" className="-rotate-90">
-      <circle cx="28" cy="28" r={r} fill="none" stroke="rgba(78,168,255,0.12)" strokeWidth="4" />
-      <circle cx="28" cy="28" r={r} fill="none" stroke="#4EA8FF" strokeWidth="4"
-        strokeDasharray={circ} strokeDashoffset={circ * (1 - rate / 100)}
-        strokeLinecap="round" className="transition-all duration-700" />
-    </svg>
-  );
-}
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>([]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<"all" | "reviewed" | "pending">("all");
+  const { mode } = useMode();
+  const isPractice = mode === "practice";
 
-  const router = useRouter();
-  const { mode, isPractice } = useMode();
-
-  const loadData = useCallback(async (silent = false) => {
-    try {
-      if (!silent) setIsLoading(true);
-      else setIsRefreshing(true);
-      const data = await fetchDashboard(mode);
-      setStats(data);
-      setError(null);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load dashboard");
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, [mode]);
-
-  useEffect(() => { void loadData(); }, [loadData]);
-  useEffect(() => {
-    getWatchlist({ mode }).then(({ items }) => setWatchlistItems(items)).catch(() => {});
-  }, [mode]);
-  useEffect(() => {
-    const fn = () => { if (document.visibilityState === "visible") loadData(true); };
-    document.addEventListener("visibilitychange", fn);
-    return () => document.removeEventListener("visibilitychange", fn);
-  }, [loadData]);
-
-  if (isLoading) return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] gap-4">
-      <Loader2 className="w-10 h-10 text-tx-primary animate-spin" />
-      <p className="text-tx-text-secondary font-syne text-sm tracking-widest uppercase">Mapping your investor DNA...</p>
-    </div>
-  );
-
-  if (error) return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] gap-4 text-center">
-      <div className="p-4 rounded-full bg-tx-danger/10 border border-tx-danger/30">
-        <AlertCircle className="w-10 h-10 text-tx-danger" />
-      </div>
-      <h2 className="font-syne text-2xl font-bold">Something went wrong</h2>
-      <p className="text-tx-text-secondary max-w-md">{error}</p>
-      <button onClick={() => loadData()} className="mt-4 px-6 py-2.5 bg-tx-primary text-[#08080F] font-bold rounded-xl text-sm">Retry</button>
-    </div>
-  );
-
-  if (!stats) return null;
-
-  const filteredDecisions = stats.recent_decisions.filter(d => {
-    if (activeTab === "reviewed") return d.status === "reviewed";
-    if (activeTab === "pending") return d.status === "pending_review";
-    return true;
-  });
-
-  const watching = watchlistItems.filter(i => i.status === "watching").length;
-  const bought = watchlistItems.filter(i => i.status === "bought").length;
-  const overdue = watchlistItems.filter(i => i.status === "watching" && i.review_date && new Date(i.review_date) <= new Date());
+  // Accent colors based on mode (Green for Practice, Blue for Real)
+  const primaryBg = isPractice ? "bg-[#10B981]" : "bg-[#0066FF]";
+  const primaryText = isPractice ? "text-[#10B981]" : "text-[#0066FF]";
+  const primaryStroke = isPractice ? "#10B981" : "#0066FF";
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-12 space-y-6">
-
-      {/* ── TOP BAR ── */}
-      <motion.div custom={0} variants={fade} initial="hidden" animate="visible"
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-2">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <span className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
-              isPractice ? "bg-tx-primary/10 text-tx-primary border-tx-primary/25" : "bg-yellow-400/10 text-yellow-400 border-yellow-400/25"
-            )}>
-              <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isPractice ? "bg-tx-primary" : "bg-yellow-400")} />
-              {isPractice ? "Practice Mode" : "Real Money Mode"}
-            </span>
-          </div>
-          <h1 className="font-syne text-3xl font-bold text-white">
-            {isPractice ? "Practice Studio" : "Portfolio Command"}
-          </h1>
-          <p className="text-tx-text-secondary text-sm mt-1">
-            {isPractice ? "Virtual capital · Real lessons · Zero risk" : "Real trades · Full accountability · Stay disciplined"}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-tx-border bg-tx-card/50 text-xs text-tx-text-secondary">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Live Data
-          </div>
-          <button onClick={() => loadData(true)} disabled={isRefreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-tx-primary text-[#08080F] font-semibold rounded-xl text-sm disabled:opacity-50 transition-all hover:brightness-110">
-            <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
-            {isRefreshing ? "..." : "Refresh"}
-          </button>
-        </div>
-      </motion.div>
-      {/* ── MARKET PULSE HERO ── */}
-      <motion.div custom={1} variants={fade} initial="hidden" animate="visible"
-        className="glass-card overflow-hidden p-6 relative border border-white/10">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-tx-primary/20 via-transparent to-emerald-400/10 blur-3xl" />
-        <div className="flex flex-col gap-8 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex-1 flex flex-col pr-0 xl:pr-8 py-2">
-            <div className="flex items-center gap-3 mb-5">
-              <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live Telemetry
-              </span>
+    <div className="min-h-screen bg-[#07090E] p-4 sm:p-6 lg:p-8 font-sans text-white pb-24">
+      <div className="max-w-[1400px] mx-auto space-y-6">
+        
+        {/* TOP ROW */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Total Holding */}
+          <div className="lg:col-span-1 bg-[#11131A] rounded-[24px] p-6 border border-white/5 relative overflow-hidden flex flex-col justify-between min-h-[220px]">
+            {/* Subtle background wave/gradient */}
+            <div className="absolute inset-0 opacity-20 pointer-events-none">
+              <div className="absolute -top-24 -left-24 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
             </div>
             
-            <h2 className="font-syne text-3xl sm:text-4xl font-bold text-white mb-3 tracking-tight">
-              Your Execution Engine
-            </h2>
-            <p className="text-sm text-tx-text-secondary leading-relaxed mb-8 max-w-lg">
-              Real-time analytics on your trading habits. We process your win cadence, emotional drag, and bias saturation to keep your execution sharp and disciplined.
-            </p>
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* P&L */}
-              <div className="relative overflow-hidden rounded-2xl bg-tx-bg/50 border border-tx-border p-4 hover:border-emerald-500/30 transition-colors">
-                {(() => {
-                  const totalPnL = stats.recent_decisions.reduce((acc, d) => {
-                    const oc = Array.isArray(d.outcome) ? d.outcome[0] : d.outcome;
-                    if (oc && (oc.outcome_type === "profit" || oc.outcome_type === "loss")) {
-                      return acc + (oc.actual_return_percent || 0);
-                    }
-                    return acc;
-                  }, 0);
-                  const isPositive = totalPnL >= 0;
-                  return (
-                    <>
-                      <div className="flex items-center gap-2 mb-3">
-                        <BarChart3 className={cn("w-4 h-4", isPositive ? "text-emerald-400" : "text-tx-danger")} />
-                        <span className="text-xs font-medium text-tx-text-secondary">P&L Return</span>
-                      </div>
-                      <div className="flex items-end gap-2">
-                        <span className={cn("font-syne text-3xl font-bold", isPositive ? "text-emerald-400" : "text-tx-danger")}>
-                          {isPositive ? "+" : ""}{totalPnL.toFixed(1)}%
-                        </span>
-                      </div>
-                      <div className="mt-3 h-1 w-full bg-tx-card rounded-full overflow-hidden">
-                        <div className={cn("h-full rounded-full", isPositive ? "bg-emerald-400" : "bg-tx-danger")} style={{ width: `${Math.min(100, Math.abs(totalPnL))}%` }} />
-                      </div>
-                    </>
-                  );
-                })()}
+            <div className="relative z-10 flex items-start justify-between">
+              <h3 className="text-gray-400 font-medium">Total Holding</h3>
+              <div className="flex gap-2">
+                <button className="px-4 py-1.5 rounded-full border border-white/20 text-xs font-medium hover:bg-white/5 transition">6M</button>
+                <button className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center hover:bg-white/5 transition">
+                  <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1L5 5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
               </div>
-
-              {/* Day Streak */}
-              <div className="relative overflow-hidden rounded-2xl bg-tx-bg/50 border border-tx-border p-4 hover:border-orange-500/30 transition-colors">
-                <div className="flex items-center gap-2 mb-3">
-                  <Flame className="w-4 h-4 text-orange-400" />
-                  <span className="text-xs font-medium text-tx-text-secondary">Day Streak</span>
-                </div>
-                <div className="flex items-end gap-2">
-                  <span className="font-syne text-3xl font-bold text-orange-400">{stats.current_streak}</span>
-                  <span className="text-xs text-tx-text-muted mb-1">days</span>
-                </div>
-                <div className="mt-3 h-1 w-full bg-tx-card rounded-full overflow-hidden">
-                  <div className="h-full bg-orange-400 rounded-full" style={{ width: `${Math.min(100, stats.current_streak * 10)}%` }} />
-                </div>
-              </div>
-
-              {/* Bias Saturation */}
-              <div className="relative overflow-hidden rounded-2xl bg-tx-bg/50 border border-tx-border p-4 hover:border-tx-secondary/30 transition-colors">
-                <div className="flex items-center gap-2 mb-3">
-                  <Brain className="w-4 h-4 text-tx-secondary" />
-                  <span className="text-xs font-medium text-tx-text-secondary">Bias Saturation</span>
-                </div>
-                <div className="flex items-end gap-2">
-                  <span className="font-syne text-3xl font-bold text-white">{Object.keys(stats.bias_breakdown).length}</span>
-                  <span className="text-xs text-tx-text-muted mb-1">types</span>
-                </div>
-                <div className="mt-3 flex gap-1">
-                  {[1,2,3,4,5].map(i => (
-                    <div key={i} className={cn("h-1 flex-1 rounded-full", i <= Object.keys(stats.bias_breakdown).length ? "bg-tx-secondary" : "bg-tx-card")} />
-                  ))}
-                </div>
-              </div>
-
-              {/* Pending Reviews */}
-              <div className="relative overflow-hidden rounded-2xl bg-tx-bg/50 border border-tx-border p-4 hover:border-blue-400/30 transition-colors">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="w-4 h-4 text-blue-400" />
-                  <span className="text-xs font-medium text-tx-text-secondary">Pending Reviews</span>
-                </div>
-                <div className="flex items-end gap-2">
-                  <span className="font-syne text-3xl font-bold text-white">{stats.pending_reviews.length}</span>
-                </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <div className="h-1 flex-1 bg-tx-card rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-400 rounded-full" style={{ width: `${Math.min(100, stats.pending_reviews.length * 20)}%` }} />
-                  </div>
-                </div>
+            </div>
+            
+            <div className="relative z-10 mt-12">
+              <h1 className="text-4xl font-bold mb-3 tracking-tight">$ 12,304.11</h1>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-400">Return</span>
+                <span className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md text-xs font-medium">
+                  <TrendingUp className="w-3 h-3" />
+                  +3.5% ($ 532)
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="relative flex-1 rounded-[32px] border border-white/10 bg-[#01060f]/90 p-5 shadow-2xl shadow-cyan-500/5 overflow-hidden">
-            <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-white/10 to-transparent" />
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-tx-text-secondary">Trend summary</p>
-                <h3 className="font-syne text-2xl font-bold text-white">Momentum curve</h3>
-              </div>
-              <span className="rounded-full bg-slate-950/60 px-3 py-1 text-[11px] text-tx-text-secondary uppercase tracking-[0.2em]">Alpha +12</span>
-            </div>
-            <div className="relative h-[240px] overflow-hidden">
-              <svg viewBox="0 0 360 220" className="absolute inset-0 h-full w-full">
-                <defs>
-                  <linearGradient id="dashGradient" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#4EA8FF" stopOpacity="0.9" />
-                    <stop offset="100%" stopColor="#82E3A7" stopOpacity="0.5" />
-                  </linearGradient>
-                  <linearGradient id="fillGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#4EA8FF" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#82E3A7" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                {/* Gridlines */}
-                <path d="M0 55 L360 55" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
-                <path d="M0 110 L360 110" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
-                <path d="M0 165 L360 165" stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="4 4" />
-                
-                {/* Area Fill & Line */}
-                <path d="M0 180 C 70 190 120 90 170 120 C 220 150 280 60 360 90 L 360 220 L 0 220 Z" fill="url(#fillGradient)" />
-                <path d="M0 180 C 70 190 120 90 170 120 C 220 150 280 60 360 90" fill="none" stroke="url(#dashGradient)" strokeWidth="4" strokeLinecap="round" />
-                
-                {/* Data Points */}
-                <circle cx="0" cy="180" r="5" fill="#4EA8FF" />
-                <circle cx="170" cy="120" r="6" fill="#82E3A7" className="animate-pulse" />
-                <circle cx="360" cy="90" r="5" fill="#38BDF8" />
-              </svg>
-              <div className="absolute inset-x-0 bottom-0 flex justify-between px-3 pb-4 text-[11px] text-tx-text-secondary">
-                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          {/* My Portfolio */}
+          <div className="lg:col-span-2 bg-[#11131A] rounded-[24px] p-6 border border-white/5 flex flex-col justify-between min-h-[220px]">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-gray-400 font-medium">My Portfolio</h3>
+              <div className="flex gap-2">
+                <button className="px-5 py-1.5 rounded-full border border-white/20 text-xs font-medium hover:bg-white/5 transition">See all</button>
+                <button className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center hover:bg-white/5 transition">
+                  <ArrowUpRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 mt-6">
+
+            {/* Horizontal scrollable cards */}
+            <div className="flex items-center gap-4 overflow-x-auto pb-2 hide-scrollbar">
               {[
-                { label: "Calm execution", value: `${100 - stats.emotion_score}%`, accent: "emerald" },
-                { label: "Bias control", value: `${stats.logic_score}%`, accent: "cyan" },
-                { label: "Win momentum", value: `${stats.win_rate}%`, accent: "blue" },
-                { label: "Total Trades", value: `${stats.total_decisions}`, accent: "amber" },
-              ].map((block) => (
-                <div key={block.label} className="rounded-3xl bg-slate-950/80 p-3 border border-white/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-tx-text-secondary">{block.label}</p>
-                    <span className={cn("text-xs font-semibold", block.accent === "amber" ? "text-orange-400" : block.accent === "emerald" ? "text-emerald-400" : block.accent === "cyan" ? "text-cyan-400" : "text-blue-400")}>{block.value}</span>
+                { ticker: "AAPL", price: "$ 1,721.3", change: "+12.31 (0.7%)", up: true, units: 104, icon: Apple },
+                { ticker: "TSLA", price: "$ 1,521.3", change: "-12.31 (0.7%)", up: false, units: 124, icon: Car },
+                { ticker: "MSFT", price: "$ 1,721.3", change: "+12.31 (0.7%)", up: true, units: 10, icon: LayoutGrid },
+                { ticker: "GOOG", price: "$ 1,721.3", change: "-12.31 (0.7%)", up: false, units: 110, icon: Search },
+                { ticker: "NVDA", price: "$ 1,721.3", change: "+12.31 (0.7%)", up: true, units: 104, icon: Cpu },
+              ].map((stock, i) => (
+                <div key={i} className="bg-[#1A1C23] rounded-[16px] p-4 min-w-[140px] flex-shrink-0 border border-white/5 hover:border-white/10 transition-colors">
+                  <div className="mb-4">
+                    <p className="text-sm font-semibold mb-1">{stock.price}</p>
+                    <p className={cn("text-[10px] font-medium", stock.up ? "text-emerald-500" : "text-red-500")}>{stock.change}</p>
                   </div>
-                  <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                    <div className={cn("h-full rounded-full transition-width duration-700", block.accent === "amber" ? "bg-orange-400" : block.accent === "emerald" ? "bg-emerald-400" : block.accent === "cyan" ? "bg-cyan-400" : "bg-blue-400")} style={{ width: block.label === 'Total Trades' ? `${Math.min(100, Number(block.value) * 5)}%` : block.value }} />
+                  <div className="flex items-end justify-between mt-6">
+                    <div className="flex items-center gap-2">
+                      <stock.icon className="w-4 h-4 text-gray-400" />
+                      <span className="text-xs font-bold text-gray-300">{stock.ticker}</span>
+                    </div>
+                    <span className="text-[10px] text-gray-500">Units {stock.units}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      </motion.div>
 
-      {/* ── MAIN CONTENT GRID ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-
-        {/* LEFT: Recent Decisions Table (spans 2 cols) */}
-        <motion.div custom={5} variants={fade} initial="hidden" animate="visible"
-          className="xl:col-span-2 glass-card overflow-hidden flex flex-col">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 border-b border-tx-border gap-4">
-            <div>
-              <h2 className="font-syne text-lg font-bold text-white">Recent Decisions</h2>
-              <p className="text-tx-text-secondary text-xs mt-0.5">{stats.recent_decisions.length} total entries</p>
+        {/* MIDDLE ROW: Portfolio Performance */}
+        <div className="bg-[#11131A] rounded-[24px] p-6 border border-white/5">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-gray-400 font-medium">Portfolio Performance</h3>
+            <div className="flex gap-2">
+              {["1D", "1W", "1M", "6M", "1Y"].map((btn) => (
+                <button 
+                  key={btn}
+                  className={cn(
+                    "w-10 h-10 rounded-full text-xs font-medium flex items-center justify-center transition-colors",
+                    btn === "6M" 
+                      ? `${primaryBg} text-white border-transparent` 
+                      : "border border-white/20 text-gray-300 hover:bg-white/5"
+                  )}
+                >
+                  {btn}
+                </button>
+              ))}
             </div>
-            <div className="flex items-center gap-2">
-              {/* Filter Tabs */}
-              <div className="flex bg-tx-card rounded-lg p-1 border border-tx-border text-xs">
-                {(["all","reviewed","pending"] as const).map(tab => (
-                  <button key={tab} onClick={() => setActiveTab(tab)}
-                    className={cn("px-3 py-1.5 rounded-md font-medium capitalize transition-all",
-                      activeTab === tab ? "bg-tx-primary text-[#08080F]" : "text-tx-text-secondary hover:text-white"
-                    )}>
-                    {tab === "pending" ? "Pending" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </div>
+
+          <div className="relative h-[280px] w-full flex">
+            {/* Y-Axis */}
+            <div className="flex flex-col justify-between text-[10px] text-gray-500 pr-4 h-[240px] pt-2">
+              <span>200k</span>
+              <span>150k</span>
+              <span>100k</span>
+              <span>50k</span>
+              <span>10k</span>
+            </div>
+
+            {/* Chart Area */}
+            <div className="relative flex-1 h-[240px]">
+              {/* Horizontal grid lines */}
+              <div className="absolute inset-0 flex flex-col justify-between">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <div key={i} className="w-full h-px bg-white/5" />
+                ))}
+              </div>
+
+              {/* Tooltip & Line */}
+              <div className="absolute left-[35%] top-[50%] -translate-y-[100%] -translate-x-[50%] z-20 pointer-events-none mb-2">
+                <div className="bg-[#1A1C23] border border-white/10 rounded-xl p-3 shadow-xl min-w-[140px]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] text-gray-400">1st Mar 2024</span>
+                    <MoreHorizontal className="w-3 h-3 text-gray-500" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm">$ 16.500</span>
+                    <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                      <TrendingUp className="w-2.5 h-2.5" />
+                      +35%
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Vertical Dashed line for tooltip */}
+              <div className="absolute left-[35%] top-[50%] bottom-0 w-px border-l border-dashed border-gray-600 z-10" />
+              {/* Tooltip dot */}
+              <div className={cn("absolute left-[35%] top-[50%] w-4 h-4 rounded-full -translate-x-[50%] -translate-y-[50%] z-20 border-4 border-[#11131A]", primaryBg)} />
+
+              {/* The SVG Line */}
+              <svg viewBox="0 0 1000 240" className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={primaryStroke} stopOpacity="0.3" />
+                    <stop offset="100%" stopColor={primaryStroke} stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                {/* A squiggly line resembling the image */}
+                <path 
+                  d="M0,20 C50,20 80,60 120,60 C160,60 180,40 220,50 C260,60 300,50 350,120 C400,190 420,70 450,110 C480,150 500,60 550,50 C600,40 650,70 700,50 C750,30 800,100 850,90 C900,80 950,140 1000,150" 
+                  fill="none" 
+                  stroke={primaryStroke} 
+                  strokeWidth="3" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                />
+                <path 
+                  d="M0,20 C50,20 80,60 120,60 C160,60 180,40 220,50 C260,60 300,50 350,120 C400,190 420,70 450,110 C480,150 500,60 550,50 C600,40 650,70 700,50 C750,30 800,100 850,90 C900,80 950,140 1000,150 L1000,240 L0,240 Z" 
+                  fill="url(#chartFill)" 
+                />
+              </svg>
+            </div>
+            
+            {/* X-Axis */}
+            <div className="absolute bottom-0 left-8 right-0 flex justify-between text-[10px] text-gray-500 pt-4 translate-y-full">
+              <span>1st Jan</span>
+              <span>15th Jan</span>
+              <span>1st Feb</span>
+              <span>15th Feb</span>
+              <span>1st Mar</span>
+              <span>15th Mar</span>
+              <span>1st Apr</span>
+              <span>15th Apr</span>
+              <span>1st May</span>
+              <span>15th May</span>
+              <span>1st Jun</span>
+              <span>15th Jun</span>
+              <span>1st Jul</span>
+              <span>15th Jul</span>
+            </div>
+          </div>
+        </div>
+
+        {/* BOTTOM ROW */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Portfolio Overview */}
+          <div className="lg:col-span-2 bg-[#11131A] rounded-[24px] p-6 border border-white/5">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-gray-400 font-medium">Portfolio Overview</h3>
+              <div className="flex bg-[#1A1C23] rounded-full p-1 border border-white/5">
+                {["All", "Gainers", "Losers"].map((btn) => (
+                  <button 
+                    key={btn}
+                    className={cn(
+                      "px-6 py-1.5 rounded-full text-xs font-medium transition-colors",
+                      btn === "All" ? `${primaryBg} text-white` : "text-gray-400 hover:text-white"
+                    )}
+                  >
+                    {btn}
                   </button>
                 ))}
               </div>
-              <Link href="/decisions" className="flex items-center gap-1 text-xs text-tx-primary font-medium hover:underline px-2">
-                View All <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
             </div>
-          </div>
 
-          <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-tx-border/50 text-[10px] text-tx-text-muted uppercase tracking-widest">
-                  <th className="px-6 py-3 font-medium">Asset</th>
-                  <th className="px-6 py-3 font-medium">Date</th>
-                  <th className="px-6 py-3 font-medium">Confidence</th>
-                  <th className="px-6 py-3 font-medium">Emotion</th>
-                  <th className="px-6 py-3 font-medium">Status</th>
-                  <th className="px-6 py-3 font-medium text-right">Return</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm divide-y divide-tx-border/20">
-                {filteredDecisions.map((d) => {
-                  const oc = Array.isArray(d.outcome) ? d.outcome[0] : d.outcome;
-                  const isProfit = oc?.outcome_type === "profit";
-                  const isLoss = oc?.outcome_type === "loss";
-                  return (
-                    <tr key={d.id} onClick={() => router.push(`/decisions/${d.id}`)}
-                      className="hover:bg-tx-primary/5 transition-colors cursor-pointer group">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-tx-secondary/10 flex items-center justify-center flex-shrink-0">
-                            <span className="text-tx-secondary font-bold text-xs">{d.asset_name.slice(0,2).toUpperCase()}</span>
-                          </div>
-                          <div>
-                            <p className="font-syne font-bold text-white group-hover:text-tx-primary transition-colors text-sm">{d.asset_name}</p>
-                            <p className="text-[10px] text-tx-text-muted uppercase">{d.asset_type.replace("_"," ")}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-tx-text-secondary text-xs">
-                        {new Date(d.decision_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 bg-tx-bg rounded-full overflow-hidden">
-                            <div className="h-full bg-tx-secondary rounded-full" style={{ width: `${d.confidence_level * 10}%` }} />
-                          </div>
-                          <span className="text-xs text-tx-text-muted font-mono">{d.confidence_level}/10</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 capitalize text-tx-text-secondary text-xs">{d.emotion}</td>
-                      <td className="px-6 py-4">
-                        <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-semibold border",
-                          d.status === "reviewed" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
-                          d.status === "pending_review" ? "bg-orange-500/10 text-orange-400 border-orange-500/20" :
-                          "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                        )}>
-                          {d.status.replace("_"," ")}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right font-mono font-bold text-sm">
-                        {isProfit ? (
-                          <span className="text-tx-primary flex items-center justify-end gap-0.5">
-                            <ArrowUpRight className="w-3.5 h-3.5" />+{oc?.actual_return_percent}%
-                          </span>
-                        ) : isLoss ? (
-                          <span className="text-tx-danger flex items-center justify-end gap-0.5">
-                            <ArrowDownRight className="w-3.5 h-3.5" />{oc?.actual_return_percent}%
-                          </span>
-                        ) : <span className="text-tx-text-muted">—</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
-                {filteredDecisions.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-16 text-center text-tx-text-secondary text-sm italic">
-                      {isPractice ? "No practice decisions yet. Start experimenting." : "No trades logged yet. Log your first decision."}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead>
+                  <tr className="text-gray-500 text-xs font-medium border-b border-white/5">
+                    <th className="pb-4 font-normal pl-2">Stock</th>
+                    <th className="pb-4 font-normal">Last Price ↑↓</th>
+                    <th className="pb-4 font-normal">Change ↑↓</th>
+                    <th className="pb-4 font-normal">Market Cap ↑↓</th>
+                    <th className="pb-4 font-normal">Volume ↑↓</th>
+                    <th className="pb-4 font-normal text-right pr-4">Last 7 days ↑↓</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                    <td className="py-4 pl-2">
+                      <div className="flex items-center gap-3">
+                        <Car className="w-4 h-4 text-gray-400" />
+                        <span className="font-bold">TSLA</span>
+                      </div>
+                    </td>
+                    <td className="py-4 font-semibold">$26.000.21</td>
+                    <td className="py-4 text-emerald-500 text-xs font-medium">+3.4%</td>
+                    <td className="py-4 text-gray-300 text-xs">$ 564.06 B</td>
+                    <td className="py-4 text-gray-300 text-xs">$ 379B</td>
+                    <td className="py-4 pr-4">
+                      <div className="w-16 h-6 ml-auto">
+                        <svg viewBox="0 0 100 30" className="w-full h-full overflow-visible">
+                          <path d="M0,20 Q10,25 20,15 T40,20 T60,10 T80,15 T100,5" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" />
+                          <circle cx="100" cy="5" r="3" fill="#10B981" />
+                        </svg>
+                      </div>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                  <tr className="hover:bg-white/[0.02] transition-colors">
+                    <td className="py-4 pl-2">
+                      <div className="flex items-center gap-3">
+                        <Apple className="w-4 h-4 text-gray-400" />
+                        <span className="font-bold">AAPL</span>
+                      </div>
+                    </td>
+                    <td className="py-4 font-semibold">$32.000.21</td>
+                    <td className="py-4 text-red-500 text-xs font-medium">-3.4%</td>
+                    <td className="py-4 text-gray-300 text-xs">$ 564.06 B</td>
+                    <td className="py-4 text-gray-300 text-xs">$ 379B</td>
+                    <td className="py-4 pr-4">
+                      <div className="w-16 h-6 ml-auto">
+                        <svg viewBox="0 0 100 30" className="w-full h-full overflow-visible">
+                          <path d="M0,5 Q10,10 20,5 T40,15 T60,10 T80,20 T100,25" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" />
+                          <circle cx="100" cy="25" r="3" fill="#EF4444" />
+                        </svg>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </motion.div>
 
-        {/* RIGHT COLUMN */}
-        <div className="flex flex-col gap-6">
-
-          {/* Biggest Bias */}
-          <motion.div custom={6} variants={fade} initial="hidden" animate="visible"
-            className="glass-card p-6 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-syne text-sm font-bold text-tx-text-secondary uppercase tracking-widest">Biggest Bias</h3>
-              <div className="p-1.5 rounded-lg bg-tx-danger/10">
-                <AlertCircle className="w-4 h-4 text-tx-danger" />
-              </div>
-            </div>
-            <p className={cn(
-              "font-syne font-bold text-tx-danger uppercase tracking-wide leading-none mb-3",
-              stats.top_bias.length > 10 ? "text-2xl" : "text-4xl"
-            )}>
-              {stats.top_bias === "none" ? "CLEAN" : stats.top_bias.split("_").join(" ")}
-            </p>
-            <p className="text-tx-text-secondary text-xs leading-relaxed">
-              {stats.top_bias === "none"
-                ? "No behavioral leaks detected. Solid execution so far."
-                : `Detected in ${stats.bias_breakdown[stats.top_bias] || 0} of your recent trades. Awareness is step one.`}
-            </p>
-            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-tx-danger opacity-5 rounded-full blur-2xl" />
-          </motion.div>
-
-          {/* Watchlist Snapshot */}
-          <motion.div custom={7} variants={fade} initial="hidden" animate="visible">
-            <Link href="/watchlist" className="glass-card p-6 relative overflow-hidden group block hover:border-tx-primary/30 transition-colors">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-syne text-sm font-bold text-tx-text-secondary uppercase tracking-widest flex items-center gap-2">
-                  <Eye className={cn("w-4 h-4", isPractice ? "text-tx-primary" : "text-yellow-400")} />
-                  Watchlist
-                </h3>
-                <ChevronRight className="w-4 h-4 text-tx-text-muted group-hover:text-white transition-colors" />
-              </div>
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                {[
-                  { label: "Watching", count: watching, color: "text-blue-400" },
-                  { label: "Bought", count: bought, color: "text-emerald-400" },
-                  { label: "Skipped", count: watchlistItems.filter(i => i.status === "skipped").length, color: "text-red-400" },
-                ].map(s => (
-                  <div key={s.label} className="text-center bg-tx-bg/50 rounded-xl p-3">
-                    <div className={cn("font-mono text-2xl font-bold", s.color)}>{s.count}</div>
-                    <div className="text-[10px] text-tx-text-muted mt-0.5">{s.label}</div>
-                  </div>
-                ))}
-              </div>
-              {overdue.length > 0 ? (
-                <div className="flex items-center gap-2 px-3 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                  <AlertCircle className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
-                  <span className="text-xs text-yellow-400 font-medium">{overdue.length} review{overdue.length > 1 ? "s" : ""} overdue</span>
-                </div>
-              ) : (
-                <p className="text-xs text-tx-text-muted italic">All reviews up to date.</p>
-              )}
-            </Link>
-          </motion.div>
-
-          {/* Pending Reviews */}
-          <motion.div custom={8} variants={fade} initial="hidden" animate="visible"
-            className="glass-card p-6 flex-1">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-syne text-sm font-bold text-tx-text-secondary uppercase tracking-widest flex items-center gap-2">
-                <Clock className="w-4 h-4 text-orange-400" />
-                Awaiting Review
-              </h3>
-              <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full px-2 py-0.5 font-bold">
-                {stats.pending_reviews.length}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {stats.pending_reviews.slice(0, 3).map((t) => (
-                <div key={t.id} className="flex justify-between items-center p-3 bg-tx-bg/50 border border-tx-border/60 rounded-xl hover:border-tx-primary/30 transition-colors">
-                  <div>
-                    <p className="font-syne font-bold text-sm text-white">{t.asset_name}</p>
-                    <p className="text-[10px] text-tx-text-muted">{new Date(t.decision_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</p>
-                  </div>
-                  <Link href={`/review?id=${t.id}`}
-                    className="px-3 py-1.5 bg-tx-primary/10 hover:bg-tx-primary/20 text-tx-primary border border-tx-primary/30 rounded-lg text-xs font-semibold transition-colors">
-                    Review →
-                  </Link>
-                </div>
+          {/* Watchlist */}
+          <div className="lg:col-span-1 bg-[#11131A] rounded-[24px] p-6 border border-white/5">
+            <h3 className="text-gray-400 font-medium mb-6">Watchlist</h3>
+            <div className="flex bg-[#1A1C23] rounded-full p-1 border border-white/5 mb-6">
+              {["Most Viewed", "Gainers", "Losers"].map((btn) => (
+                <button 
+                  key={btn}
+                  className={cn(
+                    "flex-1 py-1.5 rounded-full text-[11px] font-medium transition-colors",
+                    btn === "Most Viewed" ? `${primaryBg} text-white` : "text-gray-400 hover:text-white"
+                  )}
+                >
+                  {btn}
+                </button>
               ))}
-              {stats.pending_reviews.length === 0 && (
-                <div className="flex flex-col items-center py-6 text-center">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-400 mb-2" />
-                  <p className="text-sm text-tx-text-secondary">All caught up!</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/[0.03] transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#1A1C23] flex items-center justify-center">
+                    <Music className="w-4 h-4 text-gray-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">Spotify</p>
+                    <p className="text-[10px] text-gray-500">NYSE. SPOT</p>
+                  </div>
                 </div>
-              )}
+                <div className="text-right">
+                  <p className="text-sm font-bold">$2.310.5</p>
+                  <p className="text-[10px] text-emerald-500 font-medium">+2.34%</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/[0.03] transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#1A1C23] flex items-center justify-center">
+                    <ShoppingCart className="w-4 h-4 text-gray-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">Amazon</p>
+                    <p className="text-[10px] text-gray-500">NYSE. AMZN</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold">$2.310.5</p>
+                  <p className="text-[10px] text-emerald-500 font-medium">+2.34%</p>
+                </div>
+              </div>
             </div>
-          </motion.div>
+          </div>
         </div>
+
       </div>
-
-      {/* ── BOTTOM STRIP: Quick Nav Cards ── */}
-      <motion.div custom={9} variants={fade} initial="hidden" animate="visible"
-        className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { label: "P&L Analysis", sub: "Emotion vs returns", icon: BarChart3, href: "/pl", color: "text-emerald-400", bg: "bg-emerald-500/10" },
-          { label: "Pattern Mirror", sub: "Your behaviour map", icon: Brain, href: "/mirror", color: "text-tx-secondary", bg: "bg-tx-secondary/10" },
-          { label: "Outcome Review", sub: "Close open trades", icon: Target, href: "/review", color: "text-orange-400", bg: "bg-orange-500/10" },
-          { label: isPractice ? "Practice Portfolio" : "My Decisions", sub: isPractice ? "Virtual positions" : "All logged trades", icon: isPractice ? TrendingUp : BookOpen, href: isPractice ? "/practice" : "/decisions", color: "text-tx-primary", bg: "bg-tx-primary/10" },
-        ].map((item, i) => (
-          <Link key={i} href={item.href}
-            className="glass-card p-5 flex items-center gap-4 group hover:-translate-y-1 hover:border-tx-primary/25 transition-all duration-300">
-            <div className={cn("p-2.5 rounded-xl flex-shrink-0", item.bg)}>
-              <item.icon className={cn("w-5 h-5", item.color)} />
-            </div>
-            <div className="min-w-0">
-              <p className="font-syne font-bold text-sm text-white group-hover:text-tx-primary transition-colors truncate">{item.label}</p>
-              <p className="text-[11px] text-tx-text-muted truncate">{item.sub}</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-tx-text-muted group-hover:text-white ml-auto transition-colors flex-shrink-0" />
-          </Link>
-        ))}
-      </motion.div>
-
     </div>
   );
 }
