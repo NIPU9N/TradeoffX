@@ -229,13 +229,13 @@ export default function Dashboard() {
                   <Brain className="w-4 h-4 text-orange-400" /> Biggest Bias
                 </h3>
               </div>
-              <div className="relative z-10">
-                <p className="text-2xl font-bold text-white uppercase tracking-tight leading-none mb-2 drop-shadow-sm">
+              <div className="relative z-10 flex flex-col justify-end h-full">
+                <p className="text-2xl font-bold text-white uppercase tracking-tight leading-none mb-2 drop-shadow-sm truncate">
                   {biasString}
                 </p>
                 <p className="text-xs text-gray-400 leading-relaxed font-medium">
                   {stats?.top_bias === "none" || !stats?.top_bias
-                    ? "No behavioral leaks detected."
+                    ? "No leaks detected."
                     : `Detected in ${biasCount} recent trades.`}
                 </p>
               </div>
@@ -248,12 +248,14 @@ export default function Dashboard() {
                   <h3 className="text-gray-400 font-medium text-sm flex items-center gap-2 mb-4">
                     <Target className="w-4 h-4 text-blue-400" /> Win Rate
                   </h3>
-                  <div>
-                    <p className="text-3xl font-bold text-white drop-shadow-sm">{stats?.win_rate || 0}%</p>
+                  <div className="flex flex-col justify-end h-full">
+                    <p className="text-3xl font-bold text-white drop-shadow-sm leading-none mb-1">{stats?.win_rate || 0}%</p>
                     <p className="text-xs text-gray-400 mt-1 font-medium">{stats?.total_decisions || 0} Trades Total</p>
                   </div>
                </div>
-               <WinRing rate={stats?.win_rate || 0} color={hexColor} />
+               <div className="flex items-end h-full pb-1">
+                 <WinRing rate={stats?.win_rate || 0} color={hexColor} />
+               </div>
             </div>
 
             {/* Day Streak */}
@@ -263,13 +265,13 @@ export default function Dashboard() {
                   <Flame className="w-4 h-4 text-rose-500" /> Day Streak
                 </h3>
               </div>
-              <div className="relative z-10">
+              <div className="relative z-10 flex flex-col justify-end h-full">
                 <div className="flex items-baseline gap-1.5 mb-2">
                   <p className="text-4xl font-bold text-white leading-none drop-shadow-sm">{stats?.current_streak || 0}</p>
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Days</p>
                 </div>
                 <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                  {stats?.current_streak && stats.current_streak > 0 ? "Consistent logging builds edge." : "Start logging to build your streak."}
+                  {stats?.current_streak && stats.current_streak > 0 ? "Consistent logging builds edge." : "Start logging to build streak."}
                 </p>
               </div>
               <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-rose-500 opacity-[0.03] group-hover:opacity-10 transition-opacity rounded-full blur-2xl" />
@@ -383,11 +385,11 @@ export default function Dashboard() {
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead>
                   <tr className="text-gray-500 text-[11px] font-semibold tracking-wider uppercase border-b border-white/5">
-                    <th className="pb-4 pl-2">Asset</th>
-                    <th className="pb-4">Entry</th>
-                    <th className="pb-4">CMP / Exit</th>
+                    <th className="pb-4 pl-2 text-left">Asset</th>
+                    <th className="pb-4 text-center">Entry</th>
+                    <th className="pb-4 text-center">CMP / Exit</th>
                     <th className="pb-4 text-center">Qty</th>
-                    <th className="pb-4 text-right">Invested</th>
+                    <th className="pb-4 text-center">Invested</th>
                     <th className="pb-4 text-right pr-4">P&L</th>
                   </tr>
                 </thead>
@@ -395,7 +397,7 @@ export default function Dashboard() {
                   {portfolioItems.slice(0, 5).map((item: any) => {
                     return (
                       <tr key={item.id || item.asset_name} className="hover:bg-white/[0.02] transition-colors group">
-                        <td className="py-4 pl-2">
+                        <td className="py-4 pl-2 align-middle">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-[#1A1C23] flex items-center justify-center border border-white/5 group-hover:border-white/10 transition-colors">
                               <span className="text-xs font-bold text-gray-400 uppercase">{item.asset_name.charAt(0)}</span>
@@ -403,16 +405,20 @@ export default function Dashboard() {
                             <span className="font-bold text-gray-200">{item.asset_name}</span>
                           </div>
                         </td>
-                        <td className="py-4 text-gray-400 font-medium">₹{item.entryPrice?.toLocaleString("en-IN") || "--"}</td>
-                        <td className="py-4 text-gray-400 font-medium">₹{item.currentPrice?.toLocaleString("en-IN") || "--"}</td>
-                        <td className="py-4 text-gray-500 text-xs font-bold text-center bg-white/[0.02] rounded-lg my-2 inline-block px-3 mt-3">{item.qty}</td>
-                        <td className="py-4 font-semibold text-gray-300 text-right">₹{item.invAmt?.toLocaleString("en-IN") || "0"}</td>
-                        <td className="py-4 pr-4 text-right">
+                        <td className="py-4 text-gray-400 font-medium text-center align-middle">₹{item.entryPrice?.toLocaleString("en-IN") || "--"}</td>
+                        <td className="py-4 text-gray-400 font-medium text-center align-middle">₹{item.currentPrice?.toLocaleString("en-IN") || "--"}</td>
+                        <td className="py-4 align-middle">
+                          <div className="flex justify-center items-center">
+                            <span className="text-gray-500 text-xs font-bold text-center bg-white/[0.02] rounded-lg px-3 py-1.5">{item.qty}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 font-semibold text-gray-300 text-center align-middle">₹{item.invAmt?.toLocaleString("en-IN") || "0"}</td>
+                        <td className="py-4 pr-4 align-middle">
                           <div className="flex flex-col items-end justify-center">
-                            <span className={cn("text-sm font-bold", item.isUp ? "text-emerald-400" : "text-red-400")}>
+                            <span className={cn("text-sm font-bold leading-none mb-1", item.isUp ? "text-emerald-400" : "text-red-400")}>
                               {item.changeAmt > 0 ? "+" : ""}₹{Math.abs(item.changeAmt).toLocaleString("en-IN", {maximumFractionDigits:0})}
                             </span>
-                            <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded mt-1", item.isUp ? "text-emerald-500 bg-emerald-500/10" : "text-red-500 bg-red-500/10")}>
+                            <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded leading-none", item.isUp ? "text-emerald-500 bg-emerald-500/10" : "text-red-500 bg-red-500/10")}>
                               {item.changePct > 0 ? "+" : ""}{item.changePct?.toFixed(2) || "0.00"}%
                             </span>
                           </div>
