@@ -206,24 +206,27 @@ export default function LandingPage() {
             )}
           </motion.div>
 
-          {/* Animated Stats Row */}
+          {/* Platform Highlights Row */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="grid grid-cols-3 gap-6 mb-12 max-w-2xl mx-auto"
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 max-w-2xl mx-auto"
           >
-            <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 hover:border-blue-500/30 transition-all">
-              <p className="text-3xl font-bold text-blue-400 mb-1"><Counter to={2847} duration={2} />+</p>
-              <p className="text-sm text-slate-400">Active Traders</p>
+            <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 hover:border-blue-500/30 transition-all flex flex-col items-center justify-center text-center">
+              <Zap className="w-8 h-8 text-blue-400 mb-2" />
+              <p className="font-bold text-white mb-1">Live NSE Data</p>
+              <p className="text-xs text-slate-400">Real-time options chain</p>
             </div>
-            <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 hover:border-blue-500/30 transition-all">
-              <p className="text-3xl font-bold text-emerald-400 mb-1">₹<Counter to={245} duration={2} />Cr</p>
-              <p className="text-sm text-slate-400">Notional Volume</p>
+            <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 hover:border-emerald-500/30 transition-all flex flex-col items-center justify-center text-center">
+              <Brain className="w-8 h-8 text-emerald-400 mb-2" />
+              <p className="font-bold text-white mb-1">Behavioral Analytics</p>
+              <p className="text-xs text-slate-400">Track your psychology</p>
             </div>
-            <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 hover:border-blue-500/30 transition-all">
-              <p className="text-3xl font-bold text-purple-400 mb-1"><Counter to={89} duration={2} />%</p>
-              <p className="text-sm text-slate-400">Avg Win Rate</p>
+            <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4 hover:border-purple-500/30 transition-all flex flex-col items-center justify-center text-center">
+              <Shield className="w-8 h-8 text-purple-400 mb-2" />
+              <p className="font-bold text-white mb-1">Risk-Free Practice</p>
+              <p className="text-xs text-slate-400">₹10L virtual capital</p>
             </div>
           </motion.div>
 
@@ -711,81 +714,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS SECTION */}
-      <section className="py-32 px-6 relative z-10">
-        <div className="max-w-7xl mx-auto">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">Loved by Traders Across India</h2>
-            <p className="text-slate-400 text-lg">Real results from real traders</p>
-          </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { name: "Rajeev Sharma", role: "Options Trader", text: "TradeoffX literally changed how I approach trading. The behavioral insights saved me thousands.", avatar: "🎯" },
-              { name: "Priya Kapoor", role: "Day Trader", text: "The decision journal forced me to be honest about my mistakes. Best investment I've made.", avatar: "💡" },
-              { name: "Arjun Nair", role: "Swing Trader", text: "Greeks analysis is crystal clear. No more guessing. Data-driven decisions only.", avatar: "📊" }
-            ].map((testimonial, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: idx * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -5 }}
-                className="bg-gradient-to-br from-slate-800/50 to-slate-900/30 border border-slate-700/50 rounded-2xl p-8 hover:border-blue-500/30 transition-all"
-              >
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-2xl">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <p className="font-bold text-white">{testimonial.name}</p>
-                    <p className="text-sm text-slate-400">{testimonial.role}</p>
-                  </div>
-                </div>
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-slate-300 italic">"{testimonial.text}"</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* STATS SHOWCASE */}
-      <section className="py-24 px-6 relative z-10 bg-gradient-to-r from-slate-900/40 via-blue-900/20 to-slate-900/40">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
-            {[
-              { value: "2.8K+", label: "Active Traders", icon: "👥" },
-              { value: "₹245Cr", label: "Notional Volume", icon: "💰" },
-              { value: "89%", label: "Avg Win Rate", icon: "🎯" },
-              { value: "4.9/5", label: "User Rating", icon: "⭐" }
-            ].map((stat, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: idx * 0.1 }}
-                viewport={{ once: true }}
-              >
-                <div className="text-4xl mb-2">{stat.icon}</div>
-                <p className="text-4xl font-bold text-white mb-2">{stat.value}</p>
-                <p className="text-slate-400">{stat.label}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA FOOTER */}
       <section className="py-32 px-6 relative z-10 overflow-hidden">
