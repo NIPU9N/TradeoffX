@@ -80,8 +80,8 @@ export default function LandingPage() {
           
           <nav className="hidden md:flex items-center justify-center gap-8">
             <a href="#features" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Features</a>
-            <a href="#analytics" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Analytics</a>
-            <a href="#platform" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Platform</a>
+            <a href="#analytics" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">P/L Intelligence</a>
+            <a href="#platform" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Options Builder</a>
           </nav>
           
           <div className="flex items-center justify-end gap-4">
@@ -815,21 +815,21 @@ export default function LandingPage() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
           viewport={{ once: true }}
-          className="mt-20 pt-12 border-t border-slate-800/50 flex flex-col md:flex-row items-center justify-between"
+          className="mt-20 pt-12 border-t border-slate-800/50 grid grid-cols-1 md:grid-cols-3 gap-8 items-center"
         >
-          <div className="flex items-center gap-2 mb-6 md:mb-0">
+          <div className="flex items-center justify-center md:justify-start gap-2">
             <TrendingUp className="w-5 h-5 text-blue-400" />
             <span className="font-bold text-white">TradeoffX</span>
           </div>
           
-          <div className="flex flex-wrap gap-8 text-sm text-slate-400">
+          <div className="flex flex-wrap justify-center gap-8 text-sm text-slate-400">
             <a href="#" className="hover:text-white transition-colors">Documentation</a>
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
             <a href="#" className="hover:text-white transition-colors">Contact</a>
           </div>
 
-          <div className="flex gap-4 mt-6 md:mt-0">
+          <div className="flex justify-center md:justify-end gap-4">
             {["twitter", "linkedin", "instagram"].map((social) => (
               <motion.a
                 key={social}
