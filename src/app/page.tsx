@@ -124,7 +124,7 @@ export default function LandingPage() {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400 text-sm font-medium mb-8 cursor-pointer hover:border-blue-400/60 hover:bg-blue-500/20 transition-all"
           >
             <motion.span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            <span>the why behind every trade</span>
+            <span>The Why Behind Every Trade</span>
           </motion.div>
           
           <motion.h1 
@@ -739,7 +739,7 @@ export default function LandingPage() {
             whileInView={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            The missing layer between you and better returns
+            The Missing Layer Between You And Better Returns
           </motion.h2>
           
           <motion.p 
