@@ -471,11 +471,6 @@ export default function Dashboard() {
             </div>
           </div>
         </motion.div>
-                    : `Detected in ${biasCount} recent trades.`}
-                </p>
-              </div>
-              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-orange-500 opacity-[0.03] group-hover:opacity-10 transition-opacity rounded-full blur-2xl" />
-            </div>
 
             {/* Win Rate */}
             <div className="bg-[#11131A]/90 backdrop-blur-xl rounded-[24px] p-6 border border-white/5 flex items-center justify-between shadow-lg hover:border-white/10 transition-colors">
