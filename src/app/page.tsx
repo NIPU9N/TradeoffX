@@ -80,8 +80,8 @@ export default function LandingPage() {
           
           <nav className="hidden md:flex items-center justify-center gap-8">
             <a href="#features" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Features</a>
-            <a href="#platform" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Platform</a>
             <a href="#analytics" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Analytics</a>
+            <a href="#platform" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Platform</a>
           </nav>
           
           <div className="flex items-center justify-end gap-4">
@@ -124,7 +124,7 @@ export default function LandingPage() {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400 text-sm font-medium mb-8 cursor-pointer hover:border-blue-400/60 hover:bg-blue-500/20 transition-all"
           >
             <motion.span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            <span>India's First Decision Intelligence Platform</span>
+            <span>the why behind every trade</span>
           </motion.div>
           
           <motion.h1 
@@ -271,7 +271,7 @@ export default function LandingPage() {
       </section>
 
       {/* PLATFORM FEATURES */}
-      <section id="platform" className="py-32 px-6 relative z-10">
+      <section id="features" className="py-32 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -474,7 +474,7 @@ export default function LandingPage() {
       </section>
 
       {/* P&L INTELLIGENCE SECTION */}
-      <section className="py-32 px-6 relative z-10 bg-slate-900/40">
+      <section id="analytics" className="py-32 px-6 relative z-10 bg-slate-900/40">
         <div className="max-w-7xl mx-auto">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -606,7 +606,7 @@ export default function LandingPage() {
       </section>
 
       {/* OPTIONS STRATEGY BUILDER SHOWCASE */}
-      <section className="py-32 px-6 relative z-10">
+      <section id="platform" className="py-32 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -739,7 +739,7 @@ export default function LandingPage() {
             whileInView={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            Stop Guessing. Start Trading.
+            The missing layer between you and better returns
           </motion.h2>
           
           <motion.p 
