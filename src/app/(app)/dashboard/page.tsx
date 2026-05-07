@@ -27,7 +27,7 @@ import {
   Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { fetchDashboard, getWatchlist, getPracticePortfolio, getPracticePositions } from "@/lib/api";
 import type { DashboardStats, WatchlistItem, PracticePosition, PracticePortfolio } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -62,47 +62,107 @@ function WinRing({ rate, color, totalTrades }: { rate: number, color: string, to
 }
 
 // Performance Chart Component
-function PerformanceChart({ data, timeframe, color }: { data: Array<{ date: string, value: number }>, timeframe: string, color: string }) {
-  const maxValue = Math.max(...data.map(d => d.value));
-  const minValue = Math.min(...data.map(d => d.value));
+function PerformanceChart({ data, timeframe, color }: { data: Array<{ date: string, value: number, benchmark: number }>, timeframe: string, color: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  const maxValue = Math.max(...data.flatMap(d => [d.value, d.benchmark]));
+  const minValue = Math.min(...data.flatMap(d => [d.value, d.benchmark]));
   const range = maxValue - minValue || 1;
 
-  const points = data.map((point, i) => {
+  const getPoints = (key: 'value' | 'benchmark') => data.map((point, i) => {
     const x = (i / (data.length - 1)) * 100;
-    const y = 100 - ((point.value - minValue) / range) * 80; // 80% height for padding
+    const y = 100 - ((point[key] - minValue) / range) * 80;
     return `${x},${y}`;
   }).join(' ');
 
-  const areaPoints = points + ` 100,100 0,100`;
+  const primaryPoints = getPoints('value');
+  const secondaryPoints = getPoints('benchmark');
+  const areaPoints = primaryPoints + ` 100,100 0,100`;
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = x / rect.width;
+    const idx = Math.min(data.length - 1, Math.max(0, Math.round(percent * (data.length - 1))));
+    setHoverIdx(idx);
+  };
+
+  const secondaryColor = '#EAB308'; // Yellow for benchmark
 
   return (
-    <div className="relative h-full w-full">
-      {/* Grid lines */}
-      <div className="absolute inset-0 flex flex-col justify-between opacity-20">
+    <div 
+      className="relative h-full w-full"
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setHoverIdx(null)}
+    >
+      <div className="absolute inset-0 flex flex-col justify-between opacity-20 pointer-events-none">
         {[0, 1, 2, 3, 4].map((i) => (
           <div key={i} className="w-full h-px bg-white/10" />
         ))}
       </div>
 
-      <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+      <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
         <defs>
           <linearGradient id={`chartFill-${timeframe}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity="0.3" />
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
-        <polyline
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          points={points}
-          className="filter drop-shadow-sm"
-        />
-        <polygon
-          fill={`url(#chartFill-${timeframe})`}
-          points={areaPoints}
-        />
+        <polygon fill={`url(#chartFill-${timeframe})`} points={areaPoints} />
+        <polyline fill="none" stroke={secondaryColor} strokeWidth="1.5" points={secondaryPoints} strokeLinejoin="round" />
+        <polyline fill="none" stroke={color} strokeWidth="2.5" points={primaryPoints} className="filter drop-shadow-sm" strokeLinejoin="round" />
       </svg>
+
+      {hoverIdx !== null && (
+        <>
+          <div 
+            className="absolute top-0 bottom-0 w-px border-l-2 border-dashed border-gray-500/50 z-10 pointer-events-none" 
+            style={{ left: `${(hoverIdx / (data.length - 1)) * 100}%` }}
+          />
+          <div 
+            className="absolute w-3 h-3 rounded-full bg-white z-20 shadow-[0_0_10px_rgba(255,255,255,0.5)] pointer-events-none -translate-x-1/2 -translate-y-1/2"
+            style={{ 
+              left: `${(hoverIdx / (data.length - 1)) * 100}%`,
+              top: `${100 - ((data[hoverIdx].value - minValue) / range) * 80}%`
+            }}
+          />
+          <div 
+            className={cn(
+              "absolute z-30 pointer-events-none mt-2",
+              hoverIdx > data.length / 2 ? "-translate-x-[110%]" : "translate-x-[10%]"
+            )}
+            style={{ 
+              left: `${(hoverIdx / (data.length - 1)) * 100}%`,
+              top: `20%`
+            }}
+          >
+            <div className="bg-[#1A1C23]/95 backdrop-blur-md border border-white/10 rounded-xl p-3 shadow-2xl min-w-[180px]">
+              <p className="text-[10px] text-gray-400 font-medium mb-3">
+                {new Date(data[hoverIdx].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-8 rounded-full" style={{ backgroundColor: color }} />
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-medium">Portfolio</p>
+                    <p className="font-bold text-xs text-white">₹{data[hoverIdx].value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-8 rounded-full" style={{ backgroundColor: secondaryColor }} />
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-medium">Target</p>
+                    <p className="font-bold text-xs text-white">₹{data[hoverIdx].benchmark.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -241,7 +301,7 @@ export default function Dashboard() {
     };
 
     const count = periods[chartTimeframe];
-    const data = [];
+    const data: Array<{ date: string, value: number, benchmark: number }> = [];
     let baseValue = isPractice ? (practicePortfolio?.current_value || 100000) : 100000;
 
     for (let i = count; i >= 0; i--) {
@@ -256,11 +316,14 @@ export default function Dashboard() {
 
       // Simulate some volatility
       const change = (Math.random() - 0.5) * 0.02; // ±1% change
+      const bmChange = (Math.random() - 0.5) * 0.015 + 0.002;
       baseValue *= (1 + change);
+      const benchmarkValue = i === count ? baseValue : data[data.length - 1].benchmark * (1 + bmChange);
 
       data.push({
         date: date.toISOString().split('T')[0],
-        value: Math.max(0, baseValue)
+        value: Math.max(0, baseValue),
+        benchmark: Math.max(0, benchmarkValue)
       });
     }
 
@@ -437,37 +500,42 @@ export default function Dashboard() {
         <motion.div custom={3} variants={fade} initial="hidden" animate="visible"
           className="bg-[#11131A]/90 backdrop-blur-xl rounded-[24px] p-6 border border-white/5 shadow-xl">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-gray-400 font-medium flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-gray-500" /> Portfolio Performance
+            <h3 className="text-white font-bold text-lg flex items-center gap-2">
+              Analytic
             </h3>
-            <div className="flex bg-[#1A1C23] rounded-full p-1 border border-white/5">
-              {["1D", "1W", "1M", "6M", "1Y"].map((btn) => (
-                <button
-                  key={btn}
-                  onClick={() => setChartTimeframe(btn as any)}
-                  className={cn(
-                    "px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300",
-                    chartTimeframe === btn
-                      ? `${primaryBg} text-white shadow-md`
-                      : "text-gray-500 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  {btn}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <div className="flex bg-[#1A1C23] rounded-lg p-1 border border-white/5">
+                {["1D", "1W", "1M", "6M", "1Y"].map((btn) => (
+                  <button
+                    key={btn}
+                    onClick={() => setChartTimeframe(btn as any)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-300",
+                      chartTimeframe === btn
+                        ? `bg-white/10 text-white shadow-md`
+                        : "text-gray-500 hover:text-white"
+                    )}
+                  >
+                    {btn}
+                  </button>
+                ))}
+              </div>
+              <button className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5 text-gray-500 transition-colors">
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
-          <div className="relative h-[300px] w-full">
+          <div className="relative h-[300px] w-full pt-4">
             <PerformanceChart data={chartData} timeframe={chartTimeframe} color={hexColor} />
-
-            {/* Y-Axis Labels */}
-            <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-[10px] font-medium text-gray-600 pr-4 h-full pt-2">
-              <span>+15%</span>
-              <span>+10%</span>
-              <span>+5%</span>
-              <span>0%</span>
-              <span>-5%</span>
+            
+            {/* X-Axis Labels (Simulated Quarters/Months based on timeframe) */}
+            <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[10px] font-medium text-gray-600 px-4 translate-y-6">
+              {chartTimeframe === "1Y" ? (
+                <><span>Q1</span><span>Q2</span><span>Q3</span><span>Q4</span></>
+              ) : (
+                <><span>Start</span><span>Mid</span><span>End</span></>
+              )}
             </div>
           </div>
         </motion.div>
