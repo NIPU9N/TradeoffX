@@ -1,4 +1,4 @@
-import { Topbar } from "@/components/layout/Topbar";
+import { Sidebar } from "@/components/layout/Sidebar";
 import { ModeProvider } from "@/context/ModeContext";
 
 export default function AppLayout({
@@ -8,8 +8,8 @@ export default function AppLayout({
 }) {
   return (
     <ModeProvider>
-      <Topbar />
-      <main className="min-h-screen pt-16 relative bg-[#0a0a0a]">
+      <Sidebar />
+      <main className="ml-[260px] min-h-screen p-8 relative">
         {children}
       </main>
     </ModeProvider>

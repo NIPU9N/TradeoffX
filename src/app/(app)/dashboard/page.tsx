@@ -1,556 +1,775 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowUpRight, ArrowDownRight, ArrowRight, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useMode } from "@/context/ModeContext";
+import {
+  TrendingUp,
+  TrendingDown,
+  MoreHorizontal,
+  Loader2,
+  Brain,
+  Target,
+  Flame,
+  Search,
+  Activity,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  BarChart3,
+  PieChart,
+  Calendar,
+  DollarSign,
+  Percent,
+  ArrowUpRight,
+  ArrowDownRight,
+  Info
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { fetchDashboard, getWatchlist, getPracticePortfolio, getPracticePositions } from "@/lib/api";
+import type { DashboardStats, WatchlistItem, PracticePosition, PracticePortfolio } from "@/types";
+import { motion, AnimatePresence } from "framer-motion";
 
-// Types
-interface Decision {
-  id: string;
-  asset_name: string;
-  asset_type: string;
-  thesis: string;
-  status: "open" | "pending_review" | "reviewed";
-  entry_price: number;
-  created_at: string;
-  thesis_review_date: string;
-  current_price?: number; // Fetched from api/prices or mocked
+const fade = {
+  hidden: { opacity: 0, y: 15 },
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" as const } }),
+};
+
+// Enhanced Win Ring with tooltip
+function WinRing({ rate, color, totalTrades }: { rate: number, color: string, totalTrades: number }) {
+  const r = 40, circ = 2 * Math.PI * r;
+  return (
+    <div className="relative flex items-center justify-center group">
+      <svg width="100" height="100" viewBox="0 0 100 100" className="-rotate-90 filter drop-shadow-lg">
+        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
+        <circle cx="50" cy="50" r={r} fill="none" stroke={color} strokeWidth="6"
+          strokeDasharray={circ} strokeDashoffset={circ * (1 - rate / 100)}
+          strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-[11px] text-gray-500 font-medium mb-1 uppercase tracking-widest">Win Rate</span>
+        <span className="text-lg font-bold text-white leading-none">{rate}%</span>
+        <span className="text-[9px] text-gray-400 mt-0.5">{totalTrades} trades</span>
+      </div>
+      {/* Tooltip */}
+      <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+        {rate}% win rate from {totalTrades} completed trades
+      </div>
+    </div>
+  );
 }
 
-interface Outcome {
-  id: string;
-  decision_id: string;
-  quality_score: number;
-  reviewed_at: string;
-  outcome_pct: number;
-  bias_tags: string[];
+// Performance Chart Component
+function PerformanceChart({ data, timeframe, color }: { data: Array<{ date: string, value: number, benchmark: number }>, timeframe: string, color: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  const maxValue = Math.max(...data.flatMap(d => [d.value, d.benchmark]));
+  const minValue = Math.min(...data.flatMap(d => [d.value, d.benchmark]));
+  const range = maxValue - minValue || 1;
+
+  const getPoints = (key: 'value' | 'benchmark') => data.map((point, i) => {
+    const x = (i / (data.length - 1)) * 100;
+    const y = 100 - ((point[key] - minValue) / range) * 80;
+    return `${x},${y}`;
+  }).join(' ');
+
+  const primaryPoints = getPoints('value');
+  const secondaryPoints = getPoints('benchmark');
+  const areaPoints = primaryPoints + ` 100,100 0,100`;
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = x / rect.width;
+    const idx = Math.min(data.length - 1, Math.max(0, Math.round(percent * (data.length - 1))));
+    setHoverIdx(idx);
+  };
+
+  const secondaryColor = '#EAB308'; // Yellow for benchmark
+
+  return (
+    <div 
+      className="relative h-full w-full"
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setHoverIdx(null)}
+    >
+      <div className="absolute inset-0 flex flex-col justify-between opacity-20 pointer-events-none">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="w-full h-px bg-white/10" />
+        ))}
+      </div>
+
+      <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id={`chartFill-${timeframe}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon fill={`url(#chartFill-${timeframe})`} points={areaPoints} />
+        <polyline fill="none" stroke={secondaryColor} strokeWidth="1.5" points={secondaryPoints} strokeLinejoin="round" />
+        <polyline fill="none" stroke={color} strokeWidth="2.5" points={primaryPoints} className="filter drop-shadow-sm" strokeLinejoin="round" />
+      </svg>
+
+      {hoverIdx !== null && (
+        <>
+          <div 
+            className="absolute top-0 bottom-0 w-px border-l-2 border-dashed border-gray-500/50 z-10 pointer-events-none" 
+            style={{ left: `${(hoverIdx / (data.length - 1)) * 100}%` }}
+          />
+          <div 
+            className="absolute w-3 h-3 rounded-full bg-white z-20 shadow-[0_0_10px_rgba(255,255,255,0.5)] pointer-events-none -translate-x-1/2 -translate-y-1/2"
+            style={{ 
+              left: `${(hoverIdx / (data.length - 1)) * 100}%`,
+              top: `${100 - ((data[hoverIdx].value - minValue) / range) * 80}%`
+            }}
+          />
+          <div 
+            className={cn(
+              "absolute z-30 pointer-events-none mt-2",
+              hoverIdx > data.length / 2 ? "-translate-x-[110%]" : "translate-x-[10%]"
+            )}
+            style={{ 
+              left: `${(hoverIdx / (data.length - 1)) * 100}%`,
+              top: `20%`
+            }}
+          >
+            <div className="bg-[#1A1C23]/95 backdrop-blur-md border border-white/10 rounded-xl p-3 shadow-2xl min-w-[180px]">
+              <p className="text-[10px] text-gray-400 font-medium mb-3">
+                {new Date(data[hoverIdx].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-8 rounded-full" style={{ backgroundColor: color }} />
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-medium">Portfolio</p>
+                    <p className="font-bold text-xs text-white">₹{data[hoverIdx].value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-8 rounded-full" style={{ backgroundColor: secondaryColor }} />
+                  <div>
+                    <p className="text-[10px] text-gray-400 font-medium">Target</p>
+                    <p className="font-bold text-xs text-white">₹{data[hoverIdx].benchmark.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
-interface Pattern {
-  id: string;
-  pattern_label: string;
-  frequency_label: string;
-  avg_return_impact: number;
+// Enhanced Metric Card
+function MetricCard({ title, value, subtitle, icon: Icon, color, trend }: {
+  title: string,
+  value: string | number,
+  subtitle?: string,
+  icon: any,
+  color: string,
+  trend?: { direction: 'up' | 'down' | 'neutral', value: string }
+}) {
+  return (
+    <motion.div
+      className="bg-[#11131A]/90 backdrop-blur-xl rounded-[20px] p-5 border border-white/5 relative overflow-hidden group shadow-lg hover:border-white/10 transition-all duration-300 hover:shadow-xl"
+      whileHover={{ scale: 1.02 }}
+    >
+      <div className="absolute inset-0 opacity-20 pointer-events-none">
+        <div className={`absolute -top-16 -right-16 w-32 h-32 ${color} opacity-[0.03] group-hover:opacity-10 transition-opacity rounded-full blur-2xl`} />
+      </div>
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-gray-400 font-medium text-sm flex items-center gap-2">
+            <Icon className="w-4 h-4" />
+            {title}
+          </h3>
+          {trend && (
+            <div className={cn(
+              "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold",
+              trend.direction === 'up' ? "text-emerald-400 bg-emerald-500/10" :
+              trend.direction === 'down' ? "text-red-400 bg-red-500/10" :
+              "text-gray-400 bg-gray-500/10"
+            )}>
+              {trend.direction === 'up' && <ArrowUpRight className="w-3 h-3" />}
+              {trend.direction === 'down' && <ArrowDownRight className="w-3 h-3" />}
+              {trend.value}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-2xl font-bold text-white leading-none">{value}</p>
+          {subtitle && <p className="text-xs text-gray-400 font-medium">{subtitle}</p>}
+        </div>
+      </div>
+    </motion.div>
+  );
 }
 
 export default function Dashboard() {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<{
-    totalPortfolioValue: number;
-    returnPct: number;
-    returnAmt: number;
-    decisionCountTotal: number;
-    decisionCountMonth: number;
-    streak: number;
-    avgQualityScore: number;
-    scoreTrend: number;
-    recentDecisions: Decision[];
-    chartData: { date: string; score: number; name: string }[];
-    patterns: Pattern[];
-    openPositions: (Decision & { current_price: number; change_pct: number; quality_score?: number; bias?: string })[];
-    pendingReviews: Decision[];
-    reviewedCount: number;
-  } | null>(null);
+  const { mode } = useMode();
+  const isPractice = mode === "practice";
 
-  // Time filters
-  const [chartTimeframe, setChartTimeframe] = useState("1M");
-  const [openPositionsFilter, setOpenPositionsFilter] = useState("All");
-  const [hoveredChartPoint, setHoveredChartPoint] = useState<{ date: string; score: number; name: string; x: number; y: number } | null>(null);
+  const primaryBg = isPractice ? "bg-[#10B981]" : "bg-[#0066FF]";
+  const primaryText = isPractice ? "text-[#10B981]" : "text-[#0066FF]";
+  const primaryStroke = isPractice ? "#10B981" : "#0066FF";
+  const hexColor = isPractice ? "#10B981" : "#0066FF";
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
+  const [practicePortfolio, setPracticePortfolio] = useState<PracticePortfolio | null>(null);
+  const [practicePositions, setPracticePositions] = useState<PracticePosition[]>([]);
+
+  const [watchlistFilter, setWatchlistFilter] = useState<"All" | "Watching" | "Bought">("All");
+  const [portfolioFilter, setPortfolioFilter] = useState<"All" | "Gainers" | "Losers">("All");
+  const [chartTimeframe, setChartTimeframe] = useState<"1D" | "1W" | "1M" | "6M" | "1Y">("6M");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Pagination states
+  const [portfolioPage, setPortfolioPage] = useState(1);
+  const [watchlistPage, setWatchlistPage] = useState(1);
+  const itemsPerPage = 8;
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [statsData, watchData] = await Promise.all([
+        fetchDashboard(mode).catch((err) => {
+          console.error("Failed to fetch dashboard stats:", err);
+          return null;
+        }),
+        getWatchlist({ mode }).catch((err) => {
+          console.error("Failed to fetch watchlist:", err);
+          return { items: [] };
+        })
+      ]);
+
+      setStats(statsData);
+      setWatchlist(watchData.items || []);
+
+      if (isPractice) {
+        try {
+          const [portData, posData] = await Promise.all([
+            getPracticePortfolio().catch((err) => {
+              console.error("Failed to fetch practice portfolio:", err);
+              return { portfolio: null };
+            }),
+            getPracticePositions().catch((err) => {
+              console.error("Failed to fetch practice positions:", err);
+              return { positions: [] };
+            })
+          ]);
+          setPracticePortfolio(portData.portfolio);
+          setPracticePositions(posData.positions || []);
+        } catch (e) {
+          console.error("Failed to load practice data:", e);
+          setError("Failed to load practice portfolio data");
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load dashboard data:", e);
+      setError("Failed to load dashboard data. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [mode, isPractice]);
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          setLoading(false);
-          return;
-        }
+    loadData();
+  }, [loadData]);
 
-        // Fetch decisions
-        const { data: decisionsData } = await supabase
-          .from("decisions")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
+  // Generate mock chart data based on timeframe (in a real app, this would come from API)
+  const chartData = useMemo(() => {
+    const now = new Date();
+    const periods = {
+      "1D": 24, // hours
+      "1W": 7,  // days
+      "1M": 30, // days
+      "6M": 26, // weeks
+      "1Y": 52  // weeks
+    };
 
-        const decisions = decisionsData || [];
-        
-        // Fetch outcomes
-        const { data: outcomesData } = await supabase
-          .from("outcomes")
-          .select("*")
-          .eq("user_id", user.id);
-          
-        const outcomes = outcomesData || [];
+    const count = periods[chartTimeframe];
+    const data: Array<{ date: string, value: number, benchmark: number }> = [];
+    let baseValue = isPractice ? (practicePortfolio?.current_value || 100000) : 100000;
 
-        // Fetch patterns
-        const { data: patternsData } = await supabase
-          .from("patterns")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("generated_at", { ascending: false })
-          .limit(3);
-
-        const patterns = patternsData || [];
-
-        // 1. Total Portfolio Value (Sum of entry_price for open positions as a mock if live price unavailable)
-        const openDecisions = decisions.filter(d => d.status === "open" || d.status === "pending_review");
-        // Mock current price as entry_price * random small change
-        const openPositions = openDecisions.map(d => {
-          const mockChange = (Math.random() - 0.5) * 0.1; // +/- 5%
-          const currentPrice = d.entry_price * (1 + mockChange);
-          
-          // Find if there's an outcome (sometimes pending_review has partial outcome)
-          const out = outcomes.find(o => o.decision_id === d.id);
-          
-          return {
-            ...d,
-            current_price: currentPrice,
-            change_pct: mockChange * 100,
-            quality_score: out?.quality_score,
-            bias: out?.bias_tags?.[0] || "None"
-          };
-        });
-
-        const totalPortfolioValue = openPositions.reduce((sum, pos) => sum + pos.current_price, 0) || 0;
-
-        // 2. Return %
-        const closedOutcomes = outcomes.filter(o => o.outcome_pct !== null);
-        const returnPct = closedOutcomes.length > 0 
-          ? closedOutcomes.reduce((sum, o) => sum + (o.outcome_pct || 0), 0) / closedOutcomes.length 
-          : 0;
-        const returnAmt = (totalPortfolioValue * (returnPct / 100)); // Rough mock for absolute return
-
-        // 3. Decision Count
-        const decisionCountTotal = decisions.length;
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        const decisionCountMonth = decisions.filter(d => {
-          const date = new Date(d.created_at);
-          return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-        }).length;
-
-        // 4. Streak
-        // Simple mock streak calculation
-        const streak = 14; 
-
-        // 5. Avg Quality Score
-        const validScores = outcomes.filter(o => o.quality_score !== null);
-        const avgQualityScore = validScores.length > 0
-          ? Math.round(validScores.reduce((sum, o) => sum + o.quality_score, 0) / validScores.length)
-          : 0;
-        
-        // Mock score trend
-        const scoreTrend = 4.2;
-
-        // 6. Chart Data
-        const chartData = validScores
-          .sort((a, b) => new Date(a.reviewed_at).getTime() - new Date(b.reviewed_at).getTime())
-          .slice(-30) // last 30 for chart
-          .map(o => {
-            const dec = decisions.find(d => d.id === o.decision_id);
-            return {
-              date: new Date(o.reviewed_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-              score: o.quality_score,
-              name: dec?.asset_name || "Unknown"
-            };
-          });
-        
-        if (chartData.length === 0) {
-          // Mock data if none exists
-          for (let i = 10; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            chartData.push({
-              date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-              score: 50 + Math.random() * 40,
-              name: "Mock Trade"
-            });
-          }
-        }
-
-        // 7. Recent Decisions
-        const recentDecisions = decisions.slice(0, 5);
-
-        // 10. Pending Reviews
-        const today = new Date();
-        const pendingReviews = decisions.filter(d => {
-          if (d.status !== 'open') return false;
-          const reviewDate = new Date(d.thesis_review_date || d.created_at);
-          // If no review date, mock it
-          if (!d.thesis_review_date) {
-             reviewDate.setDate(reviewDate.getDate() + 7);
-          }
-          return reviewDate < today;
-        });
-
-        setData({
-          totalPortfolioValue,
-          returnPct,
-          returnAmt,
-          decisionCountTotal,
-          decisionCountMonth,
-          streak,
-          avgQualityScore,
-          scoreTrend,
-          recentDecisions,
-          chartData,
-          patterns: patterns.length > 0 ? patterns : [
-            { id: "1", pattern_label: "FOMO on momentum stocks", frequency_label: "7 of last 10 losing trades", avg_return_impact: -4.2 },
-            { id: "2", pattern_label: "Exiting winners too early", frequency_label: "12 of 30 winning trades", avg_return_impact: -8.5 },
-            { id: "3", pattern_label: "Revenge trading post-loss", frequency_label: "4 instances detected", avg_return_impact: -12.1 }
-          ],
-          openPositions,
-          pendingReviews,
-          reviewedCount: validScores.length
-        });
-
-      } catch (err) {
-        console.error("Error loading dashboard data:", err);
-      } finally {
-        setLoading(false);
+    for (let i = count; i >= 0; i--) {
+      const date = new Date(now);
+      if (chartTimeframe === "1D") {
+        date.setHours(now.getHours() - i);
+      } else if (chartTimeframe === "1W" || chartTimeframe === "1M") {
+        date.setDate(now.getDate() - i);
+      } else {
+        date.setDate(now.getDate() - (i * 7));
       }
+
+      // Simulate some volatility
+      const change = (Math.random() - 0.5) * 0.02; // ±1% change
+      const bmChange = (Math.random() - 0.5) * 0.015 + 0.002;
+      baseValue *= (1 + change);
+      const benchmarkValue = i === count ? baseValue : data[data.length - 1].benchmark * (1 + bmChange);
+
+      data.push({
+        date: date.toISOString().split('T')[0],
+        value: Math.max(0, baseValue),
+        benchmark: Math.max(0, benchmarkValue)
+      });
     }
 
-    loadData();
-  }, []);
+    return data;
+  }, [chartTimeframe, isPractice, practicePortfolio]);
 
-  if (loading || !data) {
+  const totalValue = useMemo(() => {
+    if (isPractice) return practicePortfolio?.current_value || 0;
+    if (!stats || !stats.recent_decisions) return 0;
+    return stats.recent_decisions.reduce((sum, d) => sum + (d.investment_amount || 0), 0);
+  }, [isPractice, practicePortfolio, stats]);
+
+  const totalReturn = useMemo(() => {
+    if (isPractice && practicePortfolio) {
+      return {
+        pct: practicePortfolio.total_return_percent || 0,
+        amt: practicePortfolio.total_return_amount || 0
+      };
+    }
+    if (!stats || !stats.recent_decisions) return { pct: 0, amt: 0 };
+
+    const closed = stats.recent_decisions.filter(d => {
+      const oc = Array.isArray(d.outcome) ? d.outcome[0] : d.outcome;
+      return oc && (oc.outcome_type === "profit" || oc.outcome_type === "loss");
+    });
+
+    if (closed.length === 0) return { pct: 0, amt: 0 };
+
+    const totalInvested = closed.reduce((sum, d) => sum + (d.investment_amount || 0), 0);
+    const totalReturnAmt = closed.reduce((sum, d) => {
+      const oc = Array.isArray(d.outcome) ? d.outcome[0] : d.outcome;
+      const pnl = oc?.actual_return_percent ? (d.investment_amount * (oc.actual_return_percent / 100)) : 0;
+      return sum + pnl;
+    }, 0);
+
+    const pct = totalInvested > 0 ? (totalReturnAmt / totalInvested) * 100 : 0;
+
+    return { pct, amt: totalReturnAmt };
+  }, [isPractice, practicePortfolio, stats]);
+
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[80vh]">
-        <Loader2 className="w-8 h-8 text-[#5a5a5a] animate-spin" />
+      <div className="flex flex-col items-center justify-center min-h-[70vh] gap-4">
+        <Loader2 className={cn("w-12 h-12 animate-spin", primaryText)} />
+        <p className="text-gray-400 text-sm tracking-widest uppercase font-medium">Loading Dashboard...</p>
       </div>
     );
   }
 
-  // Handle Chart Interaction
-  const handleChartMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const percentX = Math.max(0, Math.min(1, x / rect.width));
-    const idx = Math.min(data.chartData.length - 1, Math.round(percentX * (data.chartData.length - 1)));
-    
-    setHoveredChartPoint({
-      ...data.chartData[idx],
-      x: (idx / (data.chartData.length - 1)) * 100,
-      y
-    });
-  };
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] gap-4">
+        <AlertCircle className="w-12 h-12 text-red-400" />
+        <p className="text-gray-400 text-sm text-center max-w-md">{error}</p>
+        <button
+          onClick={loadData}
+          className={cn("px-4 py-2 rounded-lg font-medium transition-colors", primaryBg, "text-white hover:opacity-90")}
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
-  const chartMax = 100;
-  const chartMin = 0;
-  const chartPoints = data.chartData.map((d, i) => {
-    const x = (i / (data.chartData.length - 1)) * 100;
-    const y = 100 - ((d.score - chartMin) / (chartMax - chartMin)) * 100;
-    return `${x},${y}`;
-  }).join(' ');
+  const filteredWatchlist = watchlist
+    .filter(item => {
+      if (watchlistFilter === "All") return true;
+      if (watchlistFilter === "Watching") return item.status !== "bought";
+      if (watchlistFilter === "Bought") return item.status === "bought";
+      return true;
+    })
+    .filter(item =>
+      searchQuery === "" ||
+      item.asset_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
-  const bestDecision = Math.max(...data.chartData.map(d => d.score));
-  const worstDecision = Math.min(...data.chartData.map(d => d.score));
+  const portfolioItems = (isPractice ? practicePositions : (stats?.recent_decisions || []))
+    .map((item: any) => {
+      const isPracticeItem = isPractice;
+      const oc = !isPracticeItem && item.outcome ? (Array.isArray(item.outcome) ? item.outcome[0] : item.outcome) : null;
 
-  const filteredPositions = data.openPositions.filter(p => {
-    if (openPositionsFilter === "All") return true;
-    if (openPositionsFilter === "Stocks") return p.asset_type === "stock";
-    if (openPositionsFilter === "MF") return p.asset_type === "mutual_fund";
-    if (openPositionsFilter === "Crypto") return p.asset_type === "crypto";
-    return true;
-  });
+      const changePct = isPracticeItem ? (item.return_percent || 0) : (oc?.actual_return_percent || 0);
+      const isUp = changePct >= 0;
+
+      const entryPrice = isPracticeItem ? item.entry_price : (oc?.entry_price || 0);
+      const currentPrice = isPracticeItem ? item.current_price : (oc?.exit_price || 0);
+      const qty = isPracticeItem ? item.quantity : 1;
+      const invAmt = isPracticeItem ? (entryPrice * qty) : item.investment_amount;
+      const changeAmt = isPracticeItem ? (item.return_amount || 0) : (invAmt * (changePct / 100));
+
+      return {
+        id: item.id,
+        asset_name: item.asset_name || "Unknown",
+        isUp,
+        changePct,
+        changeAmt,
+        entryPrice,
+        currentPrice,
+        qty,
+        invAmt
+      };
+    })
+    .filter((item: any) => {
+      if (portfolioFilter === "All") return true;
+      if (portfolioFilter === "Gainers") return item.isUp && item.changePct > 0;
+      if (portfolioFilter === "Losers") return !item.isUp || item.changePct < 0;
+      return true;
+    })
+    .filter(item =>
+      searchQuery === "" ||
+      item.asset_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+  // Pagination
+  const totalPortfolioPages = Math.ceil(portfolioItems.length / itemsPerPage);
+  const paginatedPortfolio = portfolioItems.slice(
+    (portfolioPage - 1) * itemsPerPage,
+    portfolioPage * itemsPerPage
+  );
+
+  const totalWatchlistPages = Math.ceil(filteredWatchlist.length / itemsPerPage);
+  const paginatedWatchlist = filteredWatchlist.slice(
+    (watchlistPage - 1) * itemsPerPage,
+    watchlistPage * itemsPerPage
+  );
+
+  const biasString = stats?.top_bias === "none" ? "CLEAN" : stats?.top_bias?.split("_").join(" ") || "N/A";
+  const biasCount = stats?.top_bias && stats?.bias_breakdown ? (stats.bias_breakdown[stats.top_bias] || 0) : 0;
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6 pb-24 text-[#f0f0f0]">
-      
-      {/* SECTION 1 — TOP ROW */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+    <div className="min-h-screen bg-[#07090E] p-4 sm:p-6 lg:p-8 font-sans text-white pb-24 overflow-hidden">
+      <div className="max-w-[1400px] mx-auto space-y-6">
         
-        {/* Card 1 — Total Holdings */}
-        <div className="lg:col-span-3 bg-[#111] border border-[#222] rounded-lg p-5 flex flex-col justify-between">
-          <div className="flex justify-end mb-4">
-            <div className="flex bg-[#161616] border border-[#222] rounded-full p-0.5">
-              {['1W', '1M', '6M', '1Y'].map(t => (
-                <button key={t} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${t === '1M' ? 'bg-[#222] text-[#f0f0f0]' : 'text-[#5a5a5a] hover:text-[#f0f0f0]'}`}>
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h2 className="text-3xl font-mono tracking-tight text-[#f0f0f0]">₹{data.totalPortfolioValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</h2>
-            <div className="flex items-center gap-2 mt-2">
-              <span className={`font-mono text-xs ${data.returnPct >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
-                {data.returnPct >= 0 ? '+' : ''}{data.returnPct.toFixed(2)}%
-              </span>
-              <span className="text-[#5a5a5a] text-xs font-mono">
-                {data.returnAmt >= 0 ? '+' : ''}₹{Math.abs(data.returnAmt).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
-              </span>
-            </div>
-          </div>
+        {/* TOP ROW - Key Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <MetricCard
+            title={isPractice ? "Total Deployed Capital" : "Total Tracked Capital"}
+            value={`₹${totalValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`}
+            subtitle={isPractice ? "Virtual portfolio value" : "Sum of all investments"}
+            icon={DollarSign}
+            color={primaryBg}
+            trend={totalReturn.pct !== 0 ? {
+              direction: totalReturn.pct >= 0 ? 'up' : 'down',
+              value: `${totalReturn.pct >= 0 ? '+' : ''}${totalReturn.pct.toFixed(1)}%`
+            } : undefined}
+          />
+
+          <MetricCard
+            title="Win Rate"
+            value={`${stats?.win_rate || 0}%`}
+            subtitle={`${stats?.total_decisions || 0} total trades`}
+            icon={Target}
+            color="bg-blue-500"
+          />
+
+          <MetricCard
+            title="Current Streak"
+            value={`${stats?.current_streak || 0}`}
+            subtitle="Days of consistent logging"
+            icon={Flame}
+            color="bg-orange-500"
+          />
+
+          <MetricCard
+            title="Biggest Bias"
+            value={biasString}
+            subtitle={stats?.top_bias === "none" ? "No leaks detected" : `${biasCount} occurrences`}
+            icon={Brain}
+            color="bg-purple-500"
+          />
         </div>
 
-        {/* Card 2 — Decisions Logged */}
-        <div className="lg:col-span-2 bg-[#111] border border-[#222] rounded-lg p-5 flex flex-col justify-between">
-          <div>
-            <h3 className="text-[#5a5a5a] text-sm font-medium mb-1">Decisions Logged</h3>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-mono tracking-tight">{data.decisionCountTotal}</span>
-              <span className="text-[#5a5a5a] text-xs">{data.decisionCountMonth} this month</span>
+        {/* CHART SECTION */}
+        <motion.div custom={3} variants={fade} initial="hidden" animate="visible"
+          className="bg-[#11131A]/90 backdrop-blur-xl rounded-[24px] p-6 border border-white/5 shadow-xl">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-white font-bold text-lg flex items-center gap-2">
+              Analytic
+            </h3>
+            <div className="flex items-center gap-2">
+              <div className="flex bg-[#1A1C23] rounded-lg p-1 border border-white/5">
+                {["1D", "1W", "1M", "6M", "1Y"].map((btn) => (
+                  <button
+                    key={btn}
+                    onClick={() => setChartTimeframe(btn as any)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-300",
+                      chartTimeframe === btn
+                        ? `bg-white/10 text-white shadow-md`
+                        : "text-gray-500 hover:text-white"
+                    )}
+                  >
+                    {btn}
+                  </button>
+                ))}
+              </div>
+              <button className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/5 text-gray-500 transition-colors">
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
             </div>
           </div>
-          <div className="mt-4">
-            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-[#161616] border border-[#222] text-xs text-[#5a5a5a]">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#22c55e]"></div>
-              {data.streak}-day streak
-            </span>
-          </div>
-        </div>
 
-        {/* Card 3 — Decision Quality Score */}
-        <div className="lg:col-span-2 bg-[#111] border border-[#222] rounded-lg p-5 flex flex-col justify-between">
-          <div>
-            <h3 className="text-[#5a5a5a] text-sm font-medium mb-1">Avg Quality Score</h3>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-mono tracking-tight">{data.avgQualityScore}</span>
-              <span className="text-[#5a5a5a] text-xs">/ 100</span>
-            </div>
-          </div>
-          <div className="mt-4 flex items-center gap-2 text-xs">
-            <span className="text-[#5a5a5a]">Based on {data.reviewedCount} reviewed decisions</span>
-            <span className="flex items-center text-[#22c55e]">
-              <ArrowUpRight className="w-3 h-3" /> {data.scoreTrend}%
-            </span>
-          </div>
-        </div>
-
-        {/* Card 4 — My Recent Decisions */}
-        <div className="lg:col-span-5 bg-[#111] border border-[#222] rounded-lg p-5 flex flex-col">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-[#5a5a5a] text-sm font-medium">Recent Decisions</h3>
-            <Link href="/decisions" className="text-xs text-[#f0f0f0] hover:text-[#22c55e] transition-colors">See all</Link>
-          </div>
-          <div className="flex-1 overflow-x-auto no-scrollbar">
-            <div className="flex gap-3 min-w-max pb-2">
-              {data.recentDecisions.map(d => (
-                <div key={d.id} className="w-64 bg-[#161616] border border-[#222] rounded p-3 flex flex-col gap-2 shrink-0 hover:bg-white/5 transition-colors cursor-pointer">
-                  <div className="flex justify-between items-start">
-                    <span className="font-mono text-sm font-semibold">{d.asset_name}</span>
-                    <span className="px-2 py-0.5 rounded-full bg-[#111] border border-[#222] text-[10px] text-[#5a5a5a] uppercase">
-                      {d.asset_type}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#5a5a5a] truncate">{d.thesis}</p>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="font-mono text-xs">₹{d.entry_price}</span>
-                    <span className="flex items-center gap-1.5 text-[10px] text-[#5a5a5a]">
-                      <div className={`w-1.5 h-1.5 rounded-full ${d.status === 'open' ? 'bg-white' : d.status === 'reviewed' ? 'bg-[#22c55e]' : 'bg-amber-500'}`} />
-                      {d.status === 'pending_review' ? 'Pending' : d.status === 'reviewed' ? 'Reviewed' : 'Open'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        
-      </div>
-
-      {/* SECTION 2 — MAIN CHART + PATTERNS PANEL */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        
-        {/* Left 70% — Decision Performance Chart */}
-        <div className="lg:col-span-8 bg-[#111] border border-[#222] rounded-lg p-5">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-[#f0f0f0] text-base font-medium">Decision Quality Over Time</h3>
-            <div className="flex bg-[#161616] border border-[#222] rounded-full p-0.5">
-              {['1W', '1M', '3M', '6M', '1Y'].map(t => (
-                <button 
-                  key={t} 
-                  onClick={() => setChartTimeframe(t)}
-                  className={`text-[10px] font-medium px-2.5 py-1 rounded-full transition-colors ${chartTimeframe === t ? 'bg-[#222] text-[#f0f0f0]' : 'text-[#5a5a5a] hover:text-[#f0f0f0]'}`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <div 
-            className="relative h-[240px] w-full"
-            onMouseMove={handleChartMouseMove}
-            onMouseLeave={() => setHoveredChartPoint(null)}
-          >
-            <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#22c55e" stopOpacity="0.08" />
-                  <stop offset="100%" stopColor="#22c55e" stopOpacity="0.01" />
-                </linearGradient>
-              </defs>
-              {/* Grid Lines */}
-              <line x1="0" y1="0" x2="100" y2="0" stroke="#222" strokeWidth="0.5" />
-              <line x1="0" y1="25" x2="100" y2="25" stroke="#222" strokeWidth="0.5" />
-              <line x1="0" y1="50" x2="100" y2="50" stroke="#222" strokeWidth="0.5" />
-              <line x1="0" y1="75" x2="100" y2="75" stroke="#222" strokeWidth="0.5" />
-              <line x1="0" y1="100" x2="100" y2="100" stroke="#222" strokeWidth="0.5" />
-              
-              <polygon points={`${chartPoints} 100,100 0,100`} fill="url(#chartFill)" />
-              <polyline points={chartPoints} fill="none" stroke="#22c55e" strokeWidth="1.5" />
-            </svg>
+          <div className="relative h-[300px] w-full pt-4">
+            <PerformanceChart data={chartData} timeframe={chartTimeframe} color={hexColor} />
             
-            {/* Tooltip Hover State */}
-            {hoveredChartPoint && (
-              <>
-                <div 
-                  className="absolute top-0 bottom-0 w-px border-l border-dashed border-[#5a5a5a] pointer-events-none"
-                  style={{ left: `${hoveredChartPoint.x}%` }}
-                />
-                <div 
-                  className="absolute w-2 h-2 rounded-full bg-[#22c55e] border-2 border-[#111] pointer-events-none -translate-x-1/2 -translate-y-1/2"
-                  style={{ left: `${hoveredChartPoint.x}%`, top: `${100 - hoveredChartPoint.score}%` }}
-                />
-                <div 
-                  className={`absolute z-10 bg-[#161616] border border-[#222] rounded p-3 pointer-events-none shadow-xl ${hoveredChartPoint.x > 50 ? '-translate-x-[110%]' : 'translate-x-[10%]'}`}
-                  style={{ left: `${hoveredChartPoint.x}%`, top: '10%' }}
-                >
-                  <p className="text-[10px] text-[#5a5a5a] mb-1">{hoveredChartPoint.date}</p>
-                  <p className="text-xs font-medium text-[#f0f0f0]">{hoveredChartPoint.name}</p>
-                  <p className="font-mono text-sm text-[#22c55e] mt-1">Score: {hoveredChartPoint.score}</p>
-                </div>
-              </>
-            )}
-          </div>
-          
-          <div className="flex justify-between items-center mt-6">
-            <div className="flex gap-6 text-[11px] font-mono text-[#5a5a5a]">
-              <span>Best decision: <span className="text-[#22c55e]">+{Math.round(bestDecision)} score</span></span>
-              <span>Worst decision: <span className="text-[#ef4444]">{Math.round(worstDecision)} score</span></span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right 30% — Behavioral Patterns */}
-        <div className="lg:col-span-4 bg-[#111] border border-[#222] rounded-lg p-5 flex flex-col h-full">
-          <h3 className="text-[#f0f0f0] text-base font-medium mb-5">Your Patterns</h3>
-          <div className="flex-1 flex flex-col gap-3">
-            {data.patterns.map((p) => (
-              <div key={p.id} className="bg-[#161616] border border-[#222] rounded p-3 group hover:border-[#333] transition-colors">
-                <p className="text-sm font-medium text-[#f0f0f0] mb-1">{p.pattern_label}</p>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-[#5a5a5a]">{p.frequency_label}</span>
-                  <span className="font-mono text-[#ef4444]">{p.avg_return_impact}%</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 space-y-3">
-            <p className="text-[10px] text-[#5a5a5a] leading-relaxed">
-              Based on {data.reviewedCount} reviewed decisions — update by reviewing {data.pendingReviews.length} pending decisions.
-            </p>
-            <Link href="/patterns" className="inline-flex items-center gap-1 text-[11px] text-[#f0f0f0] hover:text-[#22c55e] transition-colors uppercase tracking-wider">
-              Full analysis <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION 3 — BOTTOM ROW */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        
-        {/* Left — Portfolio Overview Table */}
-        <div className="lg:col-span-8 bg-[#111] border border-[#222] rounded-lg p-5 overflow-x-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-[#f0f0f0] text-base font-medium">Open Positions</h3>
-            <div className="flex gap-2">
-              {['All', 'Stocks', 'MF', 'Crypto'].map(f => (
-                <button 
-                  key={f}
-                  onClick={() => setOpenPositionsFilter(f)}
-                  className={`px-3 py-1 text-[10px] rounded-full border transition-colors ${openPositionsFilter === f ? 'bg-[#161616] border-[#333] text-[#f0f0f0]' : 'border-transparent text-[#5a5a5a] hover:text-[#f0f0f0]'}`}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-          </div>
-          
-          <table className="w-full text-left text-xs whitespace-nowrap">
-            <thead>
-              <tr className="text-[#5a5a5a] border-b border-[#222]">
-                <th className="pb-3 font-normal">Asset</th>
-                <th className="pb-3 font-normal font-mono text-right">Entry Price</th>
-                <th className="pb-3 font-normal font-mono text-right">Current Price</th>
-                <th className="pb-3 font-normal font-mono text-right">Change %</th>
-                <th className="pb-3 font-normal text-center">Quality</th>
-                <th className="pb-3 font-normal">Bias Tag</th>
-                <th className="pb-3 font-normal">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPositions.map((p, idx) => (
-                <tr key={p.id} className={`border-b border-[#222] hover:bg-white/5 transition-colors cursor-pointer ${idx === filteredPositions.length - 1 ? 'border-b-0' : ''}`}>
-                  <td className="py-3 font-mono font-medium">{p.asset_name}</td>
-                  <td className="py-3 font-mono text-right text-[#5a5a5a]">₹{p.entry_price.toLocaleString("en-IN", {maximumFractionDigits:2})}</td>
-                  <td className="py-3 font-mono text-right">₹{p.current_price.toLocaleString("en-IN", {maximumFractionDigits:2})}</td>
-                  <td className={`py-3 font-mono text-right ${p.change_pct >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
-                    {p.change_pct > 0 ? '+' : ''}{p.change_pct.toFixed(2)}%
-                  </td>
-                  <td className="py-3 text-center">
-                    <span className="inline-flex px-2 py-0.5 rounded bg-[#161616] border border-[#222] font-mono text-[10px]">
-                      {p.quality_score || '--'}
-                    </span>
-                  </td>
-                  <td className="py-3">
-                    <span className="font-mono text-[10px] text-[#5a5a5a] uppercase">{p.bias}</span>
-                  </td>
-                  <td className="py-3">
-                    <div className="flex items-center gap-1.5 text-[10px] text-[#5a5a5a]">
-                      <div className={`w-1.5 h-1.5 rounded-full ${p.status === 'open' ? 'bg-white' : 'bg-amber-500'}`} />
-                      {p.status === 'open' ? 'Open' : 'Pending'}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredPositions.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-[#5a5a5a]">No positions found.</td>
-                </tr>
+            {/* X-Axis Labels (Simulated Quarters/Months based on timeframe) */}
+            <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[10px] font-medium text-gray-600 px-4 translate-y-6">
+              {chartTimeframe === "1Y" ? (
+                <><span>Q1</span><span>Q2</span><span>Q3</span><span>Q4</span></>
+              ) : (
+                <><span>Start</span><span>Mid</span><span>End</span></>
               )}
-            </tbody>
-          </table>
-        </div>
+            </div>
+          </div>
+        </motion.div>
 
-        {/* Right — Pending Reviews */}
-        <div className="lg:col-span-4 bg-[#111] border border-[#222] rounded-lg p-5 flex flex-col h-full">
-          <h3 className="text-[#f0f0f0] text-base font-medium mb-5">Awaiting Review</h3>
-          <div className="flex-1 flex flex-col gap-0 divide-y divide-[#222]">
-            {data.pendingReviews.map(r => {
-              const daysOverdue = Math.floor((new Date().getTime() - new Date(r.thesis_review_date || r.created_at).getTime()) / (1000 * 3600 * 24));
-              return (
-                <div key={r.id} className="py-3 flex items-center justify-between group">
-                  <div>
-                    <p className="font-mono text-sm">{r.asset_name}</p>
-                    <p className={`text-[10px] mt-0.5 ${daysOverdue > 7 ? 'text-amber-500' : 'text-[#5a5a5a]'}`}>
-                      {daysOverdue > 0 ? `${daysOverdue} days overdue` : 'Due today'}
-                    </p>
-                  </div>
-                  <Link href={`/review/${r.id}`} className="text-xs text-[#5a5a5a] group-hover:text-[#f0f0f0] transition-colors border border-[#222] rounded px-3 py-1 hover:bg-white/5">
-                    Review
-                  </Link>
+        {/* BOTTOM ROW - Portfolio & Watchlist */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Portfolio Overview */}
+          <motion.div custom={4} variants={fade} initial="hidden" animate="visible"
+            className="lg:col-span-2 bg-[#11131A]/90 backdrop-blur-xl rounded-[24px] p-6 border border-white/5 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-gray-400 font-medium flex items-center gap-2">
+                <PieChart className="w-4 h-4" /> Portfolio Overview
+              </h3>
+              <div className="flex items-center gap-3">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search assets..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-4 py-2 bg-[#1A1C23] border border-white/5 rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:border-white/20 w-48"
+                  />
                 </div>
-              );
-            })}
-            {data.pendingReviews.length === 0 && (
-              <div className="py-8 text-center text-[#5a5a5a] text-sm">
-                All caught up. No pending reviews.
+                {/* Filter */}
+                <div className="flex bg-[#1A1C23] rounded-full p-1 border border-white/5">
+                  {["All", "Gainers", "Losers"].map((btn: any) => (
+                    <button
+                      key={btn}
+                      onClick={() => setPortfolioFilter(btn)}
+                      className={cn(
+                        "px-4 py-1.5 rounded-full text-xs font-bold transition-all duration-300",
+                        portfolioFilter === btn ? `${primaryBg} text-white shadow-md` : "text-gray-500 hover:text-white"
+                      )}
+                    >
+                      {btn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead>
+                  <tr className="text-gray-500 text-[11px] font-semibold tracking-wider uppercase border-b border-white/5">
+                    <th className="pb-4 pl-2 text-left">Asset</th>
+                    <th className="pb-4 text-center">Entry</th>
+                    <th className="pb-4 text-center">Current</th>
+                    <th className="pb-4 text-center">Qty</th>
+                    <th className="pb-4 text-center">Invested</th>
+                    <th className="pb-4 text-right pr-4">P&L</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.02]">
+                  {paginatedPortfolio.map((item: any) => (
+                    <tr key={item.id || item.asset_name} className="hover:bg-white/[0.02] transition-colors group">
+                      <td className="py-4 pl-2 align-middle">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-[#1A1C23] flex items-center justify-center border border-white/5 group-hover:border-white/10 transition-colors">
+                            <span className="text-xs font-bold text-gray-400 uppercase">{item.asset_name.charAt(0)}</span>
+                          </div>
+                          <span className="font-bold text-gray-200 group-hover:text-white transition-colors">{item.asset_name}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 text-gray-400 font-medium text-center align-middle">
+                        ₹{item.entryPrice?.toLocaleString("en-IN") || "--"}
+                      </td>
+                      <td className="py-4 text-gray-400 font-medium text-center align-middle">
+                        ₹{item.currentPrice?.toLocaleString("en-IN") || "--"}
+                      </td>
+                      <td className="py-4 align-middle">
+                        <div className="flex justify-center items-center">
+                          <span className="text-gray-500 text-xs font-bold text-center bg-white/[0.02] rounded-lg px-3 py-1.5">
+                            {item.qty}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 font-semibold text-gray-300 text-center align-middle">
+                        ₹{item.invAmt?.toLocaleString("en-IN") || "0"}
+                      </td>
+                      <td className="py-4 pr-4 align-middle">
+                        <div className="flex flex-col items-end justify-center">
+                          <span className={cn("text-sm font-bold leading-none mb-1", item.isUp ? "text-emerald-400" : "text-red-400")}>
+                            {item.changeAmt > 0 ? "+" : ""}₹{Math.abs(item.changeAmt).toLocaleString("en-IN", {maximumFractionDigits:0})}
+                          </span>
+                          <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded leading-none",
+                            item.isUp ? "text-emerald-500 bg-emerald-500/10" : "text-red-500 bg-red-500/10")}>
+                            {item.changePct > 0 ? "+" : ""}{item.changePct?.toFixed(2) || "0.00"}%
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {paginatedPortfolio.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-gray-500">
+                        <div className="flex flex-col items-center justify-center gap-2 opacity-50">
+                          <Search className="w-8 h-8 mb-1" />
+                          <p className="text-sm font-medium">
+                            {portfolioItems.length === 0 ? "No investments logged yet." : "No assets match your search."}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPortfolioPages > 1 && (
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
+                <p className="text-xs text-gray-400">
+                  Showing {((portfolioPage - 1) * itemsPerPage) + 1} to {Math.min(portfolioPage * itemsPerPage, portfolioItems.length)} of {portfolioItems.length} assets
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPortfolioPage(Math.max(1, portfolioPage - 1))}
+                    disabled={portfolioPage === 1}
+                    className="p-2 rounded-lg border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs text-gray-400 px-3">
+                    {portfolioPage} of {totalPortfolioPages}
+                  </span>
+                  <button
+                    onClick={() => setPortfolioPage(Math.min(totalPortfolioPages, portfolioPage + 1))}
+                    disabled={portfolioPage === totalPortfolioPages}
+                    className="p-2 rounded-lg border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             )}
-          </div>
+          </motion.div>
+
+          {/* Watchlist */}
+          <motion.div custom={5} variants={fade} initial="hidden" animate="visible"
+            className="lg:col-span-1 bg-[#11131A]/90 backdrop-blur-xl rounded-[24px] p-6 border border-white/5 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-gray-400 font-medium flex items-center gap-2">
+                <Eye className="w-4 h-4" /> Watchlist
+              </h3>
+              <div className="flex bg-[#1A1C23] rounded-full p-1 border border-white/5">
+                {["All", "Watching", "Bought"].map((btn: any) => (
+                  <button
+                    key={btn}
+                    onClick={() => setWatchlistFilter(btn)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300",
+                      watchlistFilter === btn ? `${primaryBg} text-white shadow-md` : "text-gray-500 hover:text-white"
+                    )}
+                  >
+                    {btn}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              {paginatedWatchlist.map((item) => {
+                const diff = (item.current_price || 0) - (item.price_when_added || 0);
+                const pct = item.price_when_added ? (diff / item.price_when_added) * 100 : 0;
+                const isUp = pct >= 0;
+                return (
+                  <div key={item.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-white/[0.01] hover:bg-white/[0.04] transition-all cursor-pointer border border-transparent hover:border-white/5 group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#1A1C23] flex items-center justify-center font-bold text-gray-400 border border-white/5 group-hover:border-white/10 transition-colors">
+                        {item.asset_name.charAt(0)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold truncate max-w-[120px] text-gray-200 group-hover:text-white transition-colors">
+                          {item.asset_name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                            {item.asset_type || "EQUITY"}
+                          </span>
+                          <span className={cn("w-1.5 h-1.5 rounded-full", item.status === "bought" ? "bg-blue-500" : "bg-gray-500")}></span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-200 group-hover:text-white transition-colors">
+                        ₹{item.current_price?.toLocaleString("en-IN") || "--"}
+                      </p>
+                      <p className={cn("text-[11px] font-bold mt-0.5", isUp ? "text-emerald-500" : "text-red-500")}>
+                        {isUp ? "+" : ""}{pct.toFixed(2)}%
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+              {paginatedWatchlist.length === 0 && (
+                <div className="py-12 flex flex-col items-center justify-center opacity-40">
+                  <Search className="w-10 h-10 text-gray-500 mb-3" />
+                  <p className="text-gray-400 text-sm font-medium">
+                    {filteredWatchlist.length === 0 ? "No assets tracked yet." : "No assets match your filters."}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Watchlist Pagination */}
+            {totalWatchlistPages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-4 border-t border-white/5">
+                <button
+                  onClick={() => setWatchlistPage(Math.max(1, watchlistPage - 1))}
+                  disabled={watchlistPage === 1}
+                  className="p-1.5 rounded border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                </button>
+                <span className="text-xs text-gray-400 px-2">
+                  {watchlistPage} / {totalWatchlistPages}
+                </span>
+                <button
+                  onClick={() => setWatchlistPage(Math.min(totalWatchlistPages, watchlistPage + 1))}
+                  disabled={watchlistPage === totalWatchlistPages}
+                  className="p-1.5 rounded border border-white/5 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5 transition-colors"
+                >
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </motion.div>
         </div>
 
       </div>
-
     </div>
   );
 }
