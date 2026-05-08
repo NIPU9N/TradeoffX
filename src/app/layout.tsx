@@ -1,21 +1,16 @@
 import type { Metadata } from "next";
-import { Inter, Syne, JetBrains_Mono } from "next/font/google";
+import { DM_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ 
+const dmSans = DM_Sans({ 
   subsets: ["latin"], 
-  variable: "--font-inter" 
+  variable: "--font-dm-sans" 
 });
 
-const syne = Syne({ 
+const ibmPlexMono = IBM_Plex_Mono({
   subsets: ["latin"],
-  variable: "--font-syne",
-  weight: ["400", "600", "700", "800"]
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono"
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-ibm-plex-mono"
 });
 
 export const metadata: Metadata = {
@@ -31,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${syne.variable} ${jetbrainsMono.variable} antialiased bg-tx-bg text-tx-text bg-dot-grid`}
+        className={`${dmSans.variable} ${ibmPlexMono.variable} font-sans antialiased bg-[#0a0a0a] text-[#f0f0f0]`}
         suppressHydrationWarning
       >
         <main className="min-h-screen relative">
