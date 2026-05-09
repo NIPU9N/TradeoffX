@@ -54,7 +54,7 @@ export default function Dashboard() {
     recentDecisions: Decision[];
     chartData: { date: string; score: number; name: string }[];
     patterns: Pattern[];
-    openPositions: { id: string; asset_name: string; asset_type: string; status: string; investment_amount: number; entry_price: number; current_price: number; change_pct: number; unrealized_pnl: number; quality_score?: number; bias_tag: string }[];
+    openPositions: { id: string; asset_name: string; asset_type: string; status: string; investment_amount: number; target_price: number | null; stop_loss: number | null; return_pct: number | null; unrealized_pnl: number; quality_score?: number; bias_tag: string }[];
     pendingReviews: Decision[];
     reviewedCount: number;
   } | null>(null);
@@ -109,21 +109,22 @@ export default function Dashboard() {
         // Total capital invested = sum of investment_amount for open decisions
         const totalCapitalInvested = openDecisions.reduce((sum, d) => sum + (d.investment_amount || 0), 0);
 
-        // Build open positions rows with correct data
+        // Build open positions rows using real DB columns only
         const openPositions = openDecisions.map(d => {
           const investmentAmt = d.investment_amount || 0;
-          const entryPrice = d.entry_price || 0;
-          // Mock current price with small random change (replace with live price API later)
-          const mockChangePct = (Math.random() - 0.45) * 0.08;
-          const currentPrice = entryPrice > 0 ? entryPrice * (1 + mockChangePct) : 0;
-          const unrealizedPnl = investmentAmt * mockChangePct;
+          const targetPrice = d.target_price || null;
+          const stopLoss = d.stop_loss || null;
 
           const outArr = Array.isArray(d.outcome) ? d.outcome : (d.outcome ? [d.outcome] : []);
           const out = outArr[0];
+
           // Bias from outcome bias_tags first, fall back to emotion
           const biasTag = (out?.bias_tags && out.bias_tags.length > 0)
             ? out.bias_tags[0]
             : (d.emotion && d.emotion !== 'calm' ? d.emotion : 'NONE');
+
+          // Return % only if outcome exists
+          const returnPct = out?.actual_return_percent ?? null;
 
           return {
             id: d.id,
@@ -131,17 +132,17 @@ export default function Dashboard() {
             asset_type: d.asset_type,
             status: d.status,
             investment_amount: investmentAmt,
-            entry_price: entryPrice,
-            current_price: currentPrice,
-            change_pct: mockChangePct * 100,
-            unrealized_pnl: unrealizedPnl,
+            target_price: targetPrice,
+            stop_loss: stopLoss,
+            return_pct: returnPct,
+            unrealized_pnl: returnPct !== null ? (investmentAmt * returnPct) / 100 : 0,
             quality_score: out?.overall_quality_score || out?.quality_score || undefined,
             bias_tag: String(biasTag).toUpperCase()
           };
         });
 
-        // Unrealized P&L (practice) = sum of unrealized_pnl across open positions
-        const unrealizedPnL = openPositions.reduce((s, p) => s + p.unrealized_pnl, 0);
+        // Unrealized P&L = sum of what we know from outcomes (0 if no outcome yet)
+        const unrealizedPnL = openPositions.reduce((s, p) => s + (p.unrealized_pnl || 0), 0);
         const unrealizedPct = totalCapitalInvested > 0 ? (unrealizedPnL / totalCapitalInvested) * 100 : 0;
 
         // --- CLOSED / REVIEWED DECISIONS ---
@@ -532,12 +533,12 @@ export default function Dashboard() {
             <thead>
               <tr className="text-[#5a5a5a] border-b border-[#222]">
                 <th className="pb-3 font-medium">Asset</th>
-                <th className="pb-3 font-medium font-mono text-right">Entry Price (₹)</th>
-                <th className="pb-3 font-medium font-mono text-right">Current Price (₹)</th>
-                <th className="pb-3 font-medium font-mono text-right">Change %</th>
-                <th className="pb-3 font-medium text-center">Decision Quality</th>
+                <th className="pb-3 font-medium font-mono text-right">Invested (₹)</th>
+                <th className="pb-3 font-medium font-mono text-right">Target (₹)</th>
+                <th className="pb-3 font-medium font-mono text-right">Return %</th>
+                <th className="pb-3 font-medium text-center">Quality</th>
                 <th className="pb-3 font-medium">Bias Tag</th>
-                <th className="pb-3 font-medium">Review Status</th>
+                <th className="pb-3 font-medium">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -546,10 +547,14 @@ export default function Dashboard() {
                   <td className="py-3 font-mono font-medium text-[#f0f0f0] group-hover:text-[#22c55e] transition-colors">
                     <Link href={`/decisions/${p.id}`}>{p.asset_name}</Link>
                   </td>
-                  <td className="py-3 font-mono text-right text-[#5a5a5a]">{(p.entry_price || 0).toLocaleString("en-IN", {maximumFractionDigits:2})}</td>
-                  <td className="py-3 font-mono text-right text-[#f0f0f0]">{p.current_price.toLocaleString("en-IN", {maximumFractionDigits:2})}</td>
-                  <td className={`py-3 font-mono text-right ${p.change_pct >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
-                    {p.change_pct > 0 ? '+' : ''}{p.change_pct.toFixed(2)}%
+                  <td className="py-3 font-mono text-right text-[#f0f0f0]">
+                    ₹{p.investment_amount.toLocaleString("en-IN", {maximumFractionDigits:0})}
+                  </td>
+                  <td className="py-3 font-mono text-right text-[#5a5a5a]">
+                    {p.target_price ? `₹${p.target_price.toLocaleString("en-IN", {maximumFractionDigits:2})}` : <span className="text-[#333]">—</span>}
+                  </td>
+                  <td className={`py-3 font-mono text-right ${p.return_pct === null ? 'text-[#5a5a5a]' : p.return_pct >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                    {p.return_pct !== null ? `${p.return_pct > 0 ? '+' : ''}${p.return_pct.toFixed(2)}%` : <span className="text-[#333]">—</span>}
                   </td>
                   <td className="py-3 text-center">
                     <span className="inline-flex px-2 py-0.5 rounded-full bg-[#161616] border border-[#222] font-mono text-[10px] text-[#f0f0f0]">
