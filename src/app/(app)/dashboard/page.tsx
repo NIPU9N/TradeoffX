@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, ArrowDownRight, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowUpRight, ArrowRight, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useMode } from "@/context/ModeContext";
 
@@ -41,18 +41,20 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   
   const [data, setData] = useState<{
-    totalPortfolioValue: number;
-    returnPct: number;
-    returnAmt: number;
+    totalCapitalInvested: number;
+    unrealizedPnL: number;
+    unrealizedPct: number;
+    totalRealizedPnL: number;
+    totalRealizedPct: number;
     decisionCountTotal: number;
     decisionCountMonth: number;
     streak: number;
-    avgQualityScore: number;
-    scoreTrend: number;
+    biggestBias: string;
+    biasCount: number;
     recentDecisions: Decision[];
     chartData: { date: string; score: number; name: string }[];
     patterns: Pattern[];
-    openPositions: (Decision & { current_price: number; change_pct: number; quality_score?: number; bias?: string })[];
+    openPositions: { id: string; asset_name: string; asset_type: string; status: string; investment_amount: number; entry_price: number; current_price: number; change_pct: number; unrealized_pnl: number; quality_score?: number; bias_tag: string }[];
     pendingReviews: Decision[];
     reviewedCount: number;
   } | null>(null);
@@ -101,45 +103,67 @@ export default function Dashboard() {
 
         const patterns = (patternsData || []) as Pattern[];
 
-        // 1. Total Portfolio Value (Sum of entry_price for open positions as a mock if live price unavailable)
+        // --- OPEN POSITIONS ---
         const openDecisions = decisions.filter(d => d.status === "open" || d.status === "pending_review");
-        
+
+        // Total capital invested = sum of investment_amount for open decisions
+        const totalCapitalInvested = openDecisions.reduce((sum, d) => sum + (d.investment_amount || 0), 0);
+
+        // Build open positions rows with correct data
         const openPositions = openDecisions.map(d => {
-          const entryPrice = d.entry_price || d.investment_amount || 0;
-          const mockChange = (Math.random() - 0.5) * 0.1;
-          const currentPrice = entryPrice > 0 ? entryPrice * (1 + mockChange) : 0;
-          
+          const investmentAmt = d.investment_amount || 0;
+          const entryPrice = d.entry_price || 0;
+          // Mock current price with small random change (replace with live price API later)
+          const mockChangePct = (Math.random() - 0.45) * 0.08;
+          const currentPrice = entryPrice > 0 ? entryPrice * (1 + mockChangePct) : 0;
+          const unrealizedPnl = investmentAmt * mockChangePct;
+
           const outArr = Array.isArray(d.outcome) ? d.outcome : (d.outcome ? [d.outcome] : []);
           const out = outArr[0];
-          
+          // Bias from outcome bias_tags first, fall back to emotion
+          const biasTag = (out?.bias_tags && out.bias_tags.length > 0)
+            ? out.bias_tags[0]
+            : (d.emotion && d.emotion !== 'calm' ? d.emotion : 'NONE');
+
           return {
-            ...d,
+            id: d.id,
+            asset_name: d.asset_name,
+            asset_type: d.asset_type,
+            status: d.status,
+            investment_amount: investmentAmt,
             entry_price: entryPrice,
             current_price: currentPrice,
-            change_pct: mockChange * 100,
-            quality_score: out?.overall_quality_score || out?.quality_score,
-            bias: d.emotion || "none"
+            change_pct: mockChangePct * 100,
+            unrealized_pnl: unrealizedPnl,
+            quality_score: out?.overall_quality_score || out?.quality_score || undefined,
+            bias_tag: String(biasTag).toUpperCase()
           };
         });
 
-        const totalPortfolioValue = openPositions.reduce((sum, pos) => sum + pos.current_price, 0) || 0;
+        // Unrealized P&L (practice) = sum of unrealized_pnl across open positions
+        const unrealizedPnL = openPositions.reduce((s, p) => s + p.unrealized_pnl, 0);
+        const unrealizedPct = totalCapitalInvested > 0 ? (unrealizedPnL / totalCapitalInvested) * 100 : 0;
 
-        // 2. Return %
+        // --- CLOSED / REVIEWED DECISIONS ---
         const closedDecisions = decisions.filter(d => {
           const outArr = Array.isArray(d.outcome) ? d.outcome : (d.outcome ? [d.outcome] : []);
-          return outArr.length > 0 && outArr[0].actual_return_percent !== null;
+          return outArr.length > 0 && outArr[0].outcome_type && outArr[0].outcome_type !== 'still_open';
         });
-        
-        const returnPct = closedDecisions.length > 0 
-          ? closedDecisions.reduce((sum, d) => {
-              const outArr = Array.isArray(d.outcome) ? d.outcome : [d.outcome];
-              return sum + (outArr[0].actual_return_percent || 0);
-            }, 0) / closedDecisions.length 
-          : 0;
-          
-        const returnAmt = (totalPortfolioValue * (returnPct / 100));
 
-        // 3. Decision Count
+        // Total realized P&L (real mode)
+        let totalRealizedPnL = 0;
+        let totalRealizedInvested = 0;
+        closedDecisions.forEach(d => {
+          const outArr = Array.isArray(d.outcome) ? d.outcome : [d.outcome];
+          const out = outArr[0];
+          let retPct = out.actual_return_percent || 0;
+          if (out.outcome_type === 'loss' && retPct > 0) retPct = -retPct;
+          totalRealizedPnL += (d.investment_amount * retPct) / 100;
+          totalRealizedInvested += d.investment_amount || 0;
+        });
+        const totalRealizedPct = totalRealizedInvested > 0 ? (totalRealizedPnL / totalRealizedInvested) * 100 : 0;
+
+        // --- DECISION COUNT ---
         const decisionCountTotal = decisions.length;
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
@@ -148,79 +172,68 @@ export default function Dashboard() {
           return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
         }).length;
 
-        // 4. Streak
-        const streak = profile?.current_streak || 0; 
+        // --- STREAK ---
+        const streak = profile?.current_streak || 0;
 
-        // 5. Avg Quality Score
+        // --- BIGGEST BIAS (from emotion field on losing trades) ---
+        const emotionCounts: Record<string, number> = {};
+        decisions.forEach(d => {
+          if (d.emotion && d.emotion !== 'calm') {
+            emotionCounts[d.emotion] = (emotionCounts[d.emotion] || 0) + 1;
+          }
+        });
+        const biggestBiasEntry = Object.entries(emotionCounts).sort(([,a],[,b]) => b - a)[0];
+        const biggestBias = biggestBiasEntry ? String(biggestBiasEntry[0]).toUpperCase() : 'NONE';
+        const biasCount = biggestBiasEntry ? biggestBiasEntry[1] : 0;
+
+        // --- QUALITY SCORE for chart ---
         const validScores = closedDecisions.map(d => {
           const outArr = Array.isArray(d.outcome) ? d.outcome : [d.outcome];
           return outArr[0].overall_quality_score || outArr[0].quality_score || 0;
-        }).filter(score => score > 0);
-        
-        const avgQualityScore = validScores.length > 0
-          ? Math.round(validScores.reduce((sum, score) => sum + score, 0) / validScores.length)
-          : 0;
-        
-        const scoreTrend = validScores.length > 5 ? 4.2 : 0; // Mock trend
+        }).filter(s => s > 0);
 
-        // 6. Chart Data
+        // --- CHART DATA ---
         const chartData = closedDecisions
-          .filter(d => {
-            const outArr = Array.isArray(d.outcome) ? d.outcome : [d.outcome];
-            return outArr[0].reviewed_at;
-          })
+          .filter(d => { const o = Array.isArray(d.outcome) ? d.outcome[0] : d.outcome as any; return o?.reviewed_at; })
           .sort((a, b) => {
-            const dateA = new Date((Array.isArray(a.outcome) ? a.outcome[0] : a.outcome as any).reviewed_at).getTime();
-            const dateB = new Date((Array.isArray(b.outcome) ? b.outcome[0] : b.outcome as any).reviewed_at).getTime();
-            return dateA - dateB;
+            const oA = (Array.isArray(a.outcome) ? a.outcome[0] : a.outcome) as any;
+            const oB = (Array.isArray(b.outcome) ? b.outcome[0] : b.outcome) as any;
+            return new Date(oA.reviewed_at).getTime() - new Date(oB.reviewed_at).getTime();
           })
           .slice(-30)
           .map(d => {
-            const outArr = Array.isArray(d.outcome) ? d.outcome : [d.outcome];
-            const out = outArr[0];
+            const out = (Array.isArray(d.outcome) ? d.outcome[0] : d.outcome) as any;
             return {
               date: new Date(out.reviewed_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
               score: out.overall_quality_score || out.quality_score || 0,
               name: d.asset_name || "Unknown"
             };
           });
-        
+
         if (chartData.length === 0) {
           for (let i = 10; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            chartData.push({
-              date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-              score: Math.floor(50 + Math.random() * 40),
-              name: "No Data Yet"
-            });
+            const dt = new Date(); dt.setDate(dt.getDate() - i);
+            chartData.push({ date: dt.toLocaleDateString("en-US", { month: "short", day: "numeric" }), score: Math.floor(50 + Math.random() * 40), name: "No Data Yet" });
           }
         }
 
-        // 7. Recent Decisions
+        // --- RECENT DECISIONS ---
         const recentDecisions = decisions.slice(0, 5);
 
-        // 10. Pending Reviews
-        const today = new Date();
-        const pendingReviews = decisions.filter(d => {
-          if (d.status !== 'open' && d.status !== 'pending_review') return false;
-          
-          // In tradeoffX, decisions often lack thesis_review_date so we check created_at + 7 days
-          let reviewDateStr = d.created_at;
-          const createdDate = new Date(reviewDateStr);
-          createdDate.setDate(createdDate.getDate() + 7);
-          return createdDate < today || d.status === 'pending_review';
-        });
+        // --- PENDING REVIEWS: ALL open or pending_review decisions ---
+        const pendingReviews = decisions.filter(d => d.status === 'open' || d.status === 'pending_review');
 
         setData({
-          totalPortfolioValue,
-          returnPct,
-          returnAmt,
+          totalCapitalInvested,
+          unrealizedPnL,
+          unrealizedPct,
+          totalRealizedPnL,
+          totalRealizedPct,
           decisionCountTotal,
           decisionCountMonth,
           streak,
-          avgQualityScore,
-          scoreTrend,
+          biggestBias,
+          biasCount,
           recentDecisions,
           chartData,
           patterns: patterns.length > 0 ? patterns : [
@@ -302,27 +315,21 @@ export default function Dashboard() {
       {/* SECTION 1 — TOP ROW */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
         
-        {/* Card 1 — Total Holdings */}
+        {/* Card 1 — Total Capital Invested */}
         <div className="lg:col-span-3 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col justify-between shadow-sm">
-          <div className="flex justify-end mb-4">
-            <div className="flex bg-[#161616] border border-[#222] rounded-full p-0.5">
-              {['1W', '1M', '6M', '1Y'].map(t => (
-                <button key={t} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${t === '1M' ? 'bg-[#222] text-[#f0f0f0]' : 'text-[#5a5a5a] hover:text-[#f0f0f0]'}`}>
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
           <div>
-            <h2 className="text-3xl font-mono tracking-tight text-[#f0f0f0]">₹{data.totalPortfolioValue.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</h2>
-            <div className="flex items-center gap-2 mt-2">
-              <span className={`font-mono text-xs ${data.returnPct >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
-                {data.returnPct >= 0 ? '+' : ''}{data.returnPct.toFixed(2)}%
-              </span>
-              <span className="text-[#5a5a5a] text-xs font-mono">
-                {data.returnAmt >= 0 ? '+' : ''}₹{Math.abs(data.returnAmt).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
-              </span>
-            </div>
+            <h3 className="text-[#5a5a5a] text-sm font-medium mb-1">Capital Invested</h3>
+            <h2 className="text-3xl font-mono tracking-tight text-[#f0f0f0]">₹{data.totalCapitalInvested.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</h2>
+            <p className="text-[10px] text-[#5a5a5a] mt-1">{data.openPositions.length} open position{data.openPositions.length !== 1 ? 's' : ''}</p>
+          </div>
+          <div className="mt-4">
+            <span className={`font-mono text-xs ${(isPractice ? data.unrealizedPnL : data.totalRealizedPnL) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+              {isPractice ? (
+                <>{data.unrealizedPnL >= 0 ? '+' : ''}{data.unrealizedPct.toFixed(2)}% unrealized</>
+              ) : (
+                <>{data.totalRealizedPct >= 0 ? '+' : ''}{data.totalRealizedPct.toFixed(2)}% realized</>
+              )}
+            </span>
           </div>
         </div>
 
@@ -343,22 +350,23 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Card 3 — Decision Quality Score */}
+        {/* Card 3 — Unrealized P&L (practice) / Total Profit (real) */}
         <div className="lg:col-span-2 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col justify-between shadow-sm">
           <div>
-            <h3 className="text-[#5a5a5a] text-sm font-medium mb-1">Avg Quality Score</h3>
+            <h3 className="text-[#5a5a5a] text-sm font-medium mb-1">
+              {isPractice ? 'Unrealized P&L' : 'Total Profit Made'}
+            </h3>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-mono tracking-tight">{data.avgQualityScore}</span>
-              <span className="text-[#5a5a5a] text-xs">/ 100</span>
+              <span className={`text-3xl font-mono tracking-tight ${(isPractice ? data.unrealizedPnL : data.totalRealizedPnL) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                {(isPractice ? data.unrealizedPnL : data.totalRealizedPnL) >= 0 ? '+' : ''}₹{Math.abs(isPractice ? data.unrealizedPnL : data.totalRealizedPnL).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+              </span>
             </div>
           </div>
-          <div className="mt-4 flex flex-col gap-1 text-xs">
-            <span className="text-[#5a5a5a]">Based on {data.reviewedCount} reviewed decisions</span>
-            {data.scoreTrend > 0 && (
-              <span className="flex items-center text-[#22c55e]">
-                <ArrowUpRight className="w-3 h-3 mr-1" /> {data.scoreTrend}% vs last month
-              </span>
-            )}
+          <div className="mt-4 text-xs">
+            <span className={`font-mono ${(isPractice ? data.unrealizedPct : data.totalRealizedPct) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+              {(isPractice ? data.unrealizedPct : data.totalRealizedPct) >= 0 ? '+' : ''}{(isPractice ? data.unrealizedPct : data.totalRealizedPct).toFixed(2)}%
+            </span>
+            <span className="text-[#5a5a5a] ml-1">{isPractice ? 'on open positions' : 'across closed trades'}</span>
           </div>
         </div>
 
@@ -549,7 +557,7 @@ export default function Dashboard() {
                     </span>
                   </td>
                   <td className="py-3">
-                    <span className="font-mono text-[10px] text-[#5a5a5a] uppercase">{p.bias}</span>
+                    <span className="font-mono text-[10px] text-[#5a5a5a] uppercase">{p.bias_tag}</span>
                   </td>
                   <td className="py-3">
                     <div className="flex items-center gap-1.5 text-[10px] text-[#f0f0f0]">
@@ -568,32 +576,47 @@ export default function Dashboard() {
           </table>
         </div>
 
-        {/* Right — Pending Reviews */}
-        <div className="lg:col-span-4 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col h-full shadow-sm">
-          <h3 className="text-[#f0f0f0] text-sm font-medium mb-5">Awaiting Review</h3>
-          <div className="flex-1 flex flex-col gap-0 divide-y divide-[#222]">
-            {data.pendingReviews.map(r => {
-              const daysOverdue = Math.floor((new Date().getTime() - new Date(r.created_at).getTime() + (7 * 24 * 3600 * 1000)) / (1000 * 3600 * 24));
-              return (
-                <div key={r.id} className="py-3 flex items-center justify-between group">
-                  <div>
-                    <p className="font-mono text-sm text-[#f0f0f0]">{r.asset_name}</p>
-                    <p className={`text-[10px] mt-0.5 font-medium ${daysOverdue > 7 ? 'text-[#ef4444]' : 'text-amber-500'}`}>
-                      {daysOverdue > 0 ? `${daysOverdue} days overdue` : 'Due soon'}
-                    </p>
-                  </div>
-                  <Link href={`/review/${r.id}`} className="text-xs font-medium text-[#f0f0f0] border border-[#222] rounded px-3 py-1 hover:bg-[#222] transition-colors">
-                    Review now
-                  </Link>
-                </div>
-              );
-            })}
-            {data.pendingReviews.length === 0 && (
-              <div className="py-8 text-center text-[#5a5a5a] text-xs">
-                All caught up. No pending reviews.
-              </div>
-            )}
+        {/* Right side: stacked Pending Reviews + Biggest Bias */}
+        <div className="lg:col-span-4 flex flex-col gap-4">
+
+          {/* Biggest Bias Card */}
+          <div className="bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm">
+            <h3 className="text-[#5a5a5a] text-sm font-medium mb-3">Biggest Bias</h3>
+            <div className="flex items-end justify-between">
+              <span className="text-2xl font-mono font-bold text-[#f0f0f0]">{data.biggestBias}</span>
+              <span className="font-mono text-xs text-[#5a5a5a]">{data.biasCount} occurrence{data.biasCount !== 1 ? 's' : ''}</span>
+            </div>
+            <p className="text-[10px] text-[#5a5a5a] mt-2">Most frequent emotional trigger across your decisions.</p>
           </div>
+
+          {/* Awaiting Review */}
+          <div className="bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col flex-1 shadow-sm min-h-0">
+            <h3 className="text-[#f0f0f0] text-sm font-medium mb-4">Awaiting Review</h3>
+            <div className="flex flex-col gap-0 divide-y divide-[#222] overflow-y-auto max-h-[240px]">
+              {data.pendingReviews.map(r => {
+                const daysSince = Math.floor((new Date().getTime() - new Date(r.created_at).getTime()) / (1000 * 3600 * 24));
+                return (
+                  <div key={r.id} className="py-3 flex items-center justify-between group">
+                    <div>
+                      <p className="font-mono text-sm text-[#f0f0f0]">{r.asset_name}</p>
+                      <p className={`text-[10px] mt-0.5 font-medium ${daysSince > 7 ? 'text-[#ef4444]' : 'text-amber-500'}`}>
+                        {daysSince} day{daysSince !== 1 ? 's' : ''} since entry
+                      </p>
+                    </div>
+                    <Link href={`/review/${r.id}`} className="text-xs font-medium text-[#f0f0f0] border border-[#222] rounded px-3 py-1 hover:bg-[#222] transition-colors">
+                      Review now
+                    </Link>
+                  </div>
+                );
+              })}
+              {data.pendingReviews.length === 0 && (
+                <div className="py-8 text-center text-[#5a5a5a] text-xs">
+                  All caught up. No pending reviews.
+                </div>
+              )}
+            </div>
+          </div>
+
         </div>
 
       </div>
