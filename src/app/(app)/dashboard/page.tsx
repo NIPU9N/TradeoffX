@@ -173,52 +173,73 @@ export default function Dashboard() {
 
         if (mode === 'practice') {
           // Practice: use /api/practice/portfolio and /api/practice/positions
-          const [portfolioRes, positionsRes] = await Promise.all([
-            fetch('/api/practice/portfolio').then(r => r.json()),
-            fetch('/api/practice/positions').then(r => r.json()),
+          const [portfolioResponse, positionsResponse] = await Promise.all([
+            fetch('/api/practice/portfolio'),
+            fetch('/api/practice/positions'),
           ]);
-          const metrics = portfolioRes?.metrics || {};
-          const positions = (positionsRes?.positions || []).filter((p: any) => p.status === 'open');
 
-          totalCapitalInvested = metrics.deployed_capital || 0;
-          unrealizedPnL = metrics.unrealized_pnl || 0;
+          const portfolioJson = await portfolioResponse.json();
+          const positionsJson = await positionsResponse.json();
+
+          const metrics = portfolioJson?.metrics || {
+            deployed_capital: 0,
+            free_capital: 0,
+            unrealized_pnl: 0,
+            open_positions: 0,
+          };
+
+          totalCapitalInvested = Number(metrics.deployed_capital || 0);
+          unrealizedPnL = Number(metrics.unrealized_pnl || 0);
           unrealizedPct = totalCapitalInvested > 0 ? (unrealizedPnL / totalCapitalInvested) * 100 : 0;
 
-          openPositions = positions.map((p: any) => ({
-            id: p.decision_id || p.id,
-            asset_name: p.asset_name,
-            asset_type: p.asset_type,
-            status: 'open',
-            investment_amount: p.investment_amount || 0,
-            entry_price: p.entry_price || null,
-            current_price: p.current_price || null,
-            return_percent: p.return_percent || 0,
-            bias_tag: 'NONE',
-            quality_score: undefined,
-          }));
+          const positions = Array.isArray(positionsJson?.positions) ? positionsJson.positions : [];
+          openPositions = positions
+            .filter((p: any) => p.status === 'open')
+            .map((p: any) => {
+              const decision = Array.isArray(p.decisions) ? p.decisions[0] : p.decisions;
+              const biasTag = decision?.emotion && decision.emotion !== 'calm'
+                ? String(decision.emotion).toUpperCase()
+                : 'NONE';
+
+              return {
+                id: p.decision_id || p.id,
+                asset_name: p.asset_name,
+                asset_type: p.asset_type,
+                status: p.status,
+                investment_amount: Number(p.investment_amount || 0),
+                entry_price: p.entry_price != null ? Number(p.entry_price) : null,
+                current_price: p.current_price != null ? Number(p.current_price) : null,
+                return_percent: p.return_percent != null ? Number(p.return_percent) : 0,
+                bias_tag: biasTag,
+                quality_score: undefined,
+              };
+            });
         } else {
           // Real: use /api/pl for realized P&L, and decisions for open positions
-          const plRes = await fetch(`/api/pl?mode=real`).then(r => r.json());
-          const summary = plRes?.summary || {};
-          totalRealizedPnL = summary.total_pnl || 0;
-          totalRealizedPct = summary.overall_return_pct || 0;
+          const plResponse = await fetch('/api/pl?mode=real');
+          const plJson = await plResponse.json();
+          const summary = plJson?.summary || {};
+
+          totalRealizedPnL = Number(summary.total_pnl || 0);
+          totalRealizedPct = Number(summary.overall_return_pct || 0);
 
           const openDecisions = decisions.filter(d => d.status === 'open' || d.status === 'pending_review');
-          totalCapitalInvested = openDecisions.reduce((sum: number, d: any) => sum + (d.investment_amount || 0), 0);
+          totalCapitalInvested = openDecisions.reduce((sum: number, d: any) => sum + Number(d.investment_amount || 0), 0);
 
           openPositions = openDecisions.map((d: any) => {
             const outArr = Array.isArray(d.outcome) ? d.outcome : (d.outcome ? [d.outcome] : []);
             const out = outArr[0];
-            const biasTag = d.emotion && d.emotion !== 'calm' ? d.emotion.toUpperCase() : 'NONE';
+            const biasTag = d.emotion && d.emotion !== 'calm' ? String(d.emotion).toUpperCase() : 'NONE';
+
             return {
               id: d.id,
               asset_name: d.asset_name,
               asset_type: d.asset_type,
               status: d.status,
-              investment_amount: d.investment_amount || 0,
-              entry_price: null,
+              investment_amount: Number(d.investment_amount || 0),
+              entry_price: d.entry_price != null ? Number(d.entry_price) : null,
               current_price: null,
-              return_percent: out?.actual_return_percent || null,
+              return_percent: out?.actual_return_percent != null ? Number(out.actual_return_percent) : null,
               bias_tag: biasTag,
               quality_score: out?.overall_quality_score || out?.quality_score || undefined,
             };
