@@ -55,7 +55,18 @@ export default function Dashboard() {
     recentDecisions: any[];
     chartData: { date: string; score: number; name: string }[];
     patterns: Pattern[];
-    openPositions: { id: string; asset_name: string; asset_type: string; status: string; investment_amount: number; entry_price: number | null; quality_score?: number; bias_tag: string }[];
+    openPositions: { 
+      id: string; 
+      asset_name: string; 
+      asset_type: string; 
+      status: string; 
+      investment_amount: number; 
+      entry_price: number | null; 
+      current_price?: number | null;
+      return_percent?: number | null;
+      quality_score?: number; 
+      bias_tag: string 
+    }[];
     pendingReviews: any[];
     reviewedCount: number;
   } | null>(null);
@@ -146,57 +157,73 @@ export default function Dashboard() {
 
         const patterns = (patternsData || []) as Pattern[];
 
-        // --- OPEN POSITIONS ---
-        const openDecisions = decisions.filter(d => d.status === "open" || d.status === "pending_review");
-
-        // Total capital invested = sum of investment_amount for open decisions
-        const totalCapitalInvested = openDecisions.reduce((sum, d) => sum + (d.investment_amount || 0), 0);
-
-        // Build open positions rows using real DB columns only
-        const openPositions = openDecisions.map(d => {
-          const investmentAmt = d.investment_amount || 0;
-          const outArr = Array.isArray(d.outcome) ? d.outcome : (d.outcome ? [d.outcome] : []);
-          const out = outArr[0];
-          const biasTag = (out?.bias_tags && out.bias_tags.length > 0)
-            ? out.bias_tags[0]
-            : (d.emotion && d.emotion !== 'calm' ? d.emotion : 'NONE');
-          // For practice mode: entry_price comes from practice_positions via join if available
-          // For real mode: no per-share price in DB, so null
-          const entryPrice = (d as any).entry_price_per_share || null;
-          return {
-            id: d.id,
-            asset_name: d.asset_name,
-            asset_type: d.asset_type,
-            status: d.status,
-            investment_amount: investmentAmt,
-            entry_price: entryPrice,
-            quality_score: out?.overall_quality_score || out?.quality_score || undefined,
-            bias_tag: String(biasTag).toUpperCase()
-          };
-        });
-
-        // Unrealized P&L = computed from live prices after fetch
-        const unrealizedPnL = 0; // updated after live price refresh
-        const unrealizedPct = 0;
-
-        // --- CLOSED / REVIEWED DECISIONS ---
+        // --- CLOSED / REVIEWED DECISIONS (needed for chart) ---
         const closedDecisions = decisions.filter(d => {
           const outArr = Array.isArray(d.outcome) ? d.outcome : (d.outcome ? [d.outcome] : []);
           return outArr.length > 0 && outArr[0].outcome_type && outArr[0].outcome_type !== 'still_open';
         });
 
-        // Total realized P&L (real mode)
+        // --- FETCH MODE-SPECIFIC DATA FROM EXISTING APIS ---
+        let totalCapitalInvested = 0;
+        let unrealizedPnL = 0;
+        let unrealizedPct = 0;
         let totalRealizedPnL = 0;
-        let totalRealizedInvested = 0;
-        closedDecisions.forEach(d => {
-          const outArr = Array.isArray(d.outcome) ? d.outcome : [d.outcome];
-          const out = outArr[0];
-          let retPct = out.actual_return_percent || 0;
-          if (out.outcome_type === 'loss' && retPct > 0) retPct = -retPct;
-          totalRealizedPnL += (d.investment_amount * retPct) / 100;
-          totalRealizedInvested += d.investment_amount || 0;
-        });
-        const totalRealizedPct = totalRealizedInvested > 0 ? (totalRealizedPnL / totalRealizedInvested) * 100 : 0;
+        let totalRealizedPct = 0;
+        let openPositions: any[] = [];
+
+        if (mode === 'practice') {
+          // Practice: use /api/practice/portfolio and /api/practice/positions
+          const [portfolioRes, positionsRes] = await Promise.all([
+            fetch('/api/practice/portfolio').then(r => r.json()),
+            fetch('/api/practice/positions').then(r => r.json()),
+          ]);
+          const metrics = portfolioRes?.metrics || {};
+          const positions = (positionsRes?.positions || []).filter((p: any) => p.status === 'open');
+
+          totalCapitalInvested = metrics.deployed_capital || 0;
+          unrealizedPnL = metrics.unrealized_pnl || 0;
+          unrealizedPct = totalCapitalInvested > 0 ? (unrealizedPnL / totalCapitalInvested) * 100 : 0;
+
+          openPositions = positions.map((p: any) => ({
+            id: p.decision_id || p.id,
+            asset_name: p.asset_name,
+            asset_type: p.asset_type,
+            status: 'open',
+            investment_amount: p.investment_amount || 0,
+            entry_price: p.entry_price || null,
+            current_price: p.current_price || null,
+            return_percent: p.return_percent || 0,
+            bias_tag: 'NONE',
+            quality_score: undefined,
+          }));
+        } else {
+          // Real: use /api/pl for realized P&L, and decisions for open positions
+          const plRes = await fetch(`/api/pl?mode=real`).then(r => r.json());
+          const summary = plRes?.summary || {};
+          totalRealizedPnL = summary.total_pnl || 0;
+          totalRealizedPct = summary.overall_return_pct || 0;
+
+          const openDecisions = decisions.filter(d => d.status === 'open' || d.status === 'pending_review');
+          totalCapitalInvested = openDecisions.reduce((sum: number, d: any) => sum + (d.investment_amount || 0), 0);
+
+          openPositions = openDecisions.map((d: any) => {
+            const outArr = Array.isArray(d.outcome) ? d.outcome : (d.outcome ? [d.outcome] : []);
+            const out = outArr[0];
+            const biasTag = d.emotion && d.emotion !== 'calm' ? d.emotion.toUpperCase() : 'NONE';
+            return {
+              id: d.id,
+              asset_name: d.asset_name,
+              asset_type: d.asset_type,
+              status: d.status,
+              investment_amount: d.investment_amount || 0,
+              entry_price: null,
+              current_price: null,
+              return_percent: out?.actual_return_percent || null,
+              bias_tag: biasTag,
+              quality_score: out?.overall_quality_score || out?.quality_score || undefined,
+            };
+          });
+        }
 
         // --- DECISION COUNT ---
         const decisionCountTotal = decisions.length;
@@ -584,9 +611,9 @@ export default function Dashboard() {
               <tr className="text-[#5a5a5a] border-b border-[#222]">
                 <th className="pb-3 font-medium">Asset</th>
                 <th className="pb-3 font-medium font-mono text-right">Invested (₹)</th>
-                <th className="pb-3 font-medium font-mono text-right">Live Price (₹)</th>
-                <th className="pb-3 font-medium font-mono text-right">Change %</th>
-                <th className="pb-3 font-medium text-center">Quality</th>
+                <th className="pb-3 font-medium font-mono text-right">Entry Price (₹)</th>
+                <th className="pb-3 font-medium font-mono text-right">Current (₹)</th>
+                <th className="pb-3 font-medium font-mono text-right">Return %</th>
                 <th className="pb-3 font-medium">Bias Tag</th>
                 <th className="pb-3 font-medium">Status</th>
               </tr>
@@ -596,24 +623,35 @@ export default function Dashboard() {
                 const lp = livePrices[p.asset_name];
                 const livePrice = lp?.current_price ?? null;
                 const changePct = lp?.change_percent ?? null;
+                
                 return (
                   <tr key={p.id} className="border-b border-[#222] last:border-b-0 hover:bg-white/5 transition-colors group">
                     <td className="py-3 font-mono font-medium text-[#f0f0f0] group-hover:text-[#22c55e] transition-colors">
                       <Link href={`/decisions/${p.id}`}>{p.asset_name}</Link>
                     </td>
-                    <td className="py-3 font-mono text-right text-[#f0f0f0]">
-                      ₹{p.investment_amount.toLocaleString("en-IN", {maximumFractionDigits:0})}
+                    <td className="py-3 font-mono text-right text-[#5a5a5a]">
+                      ₹{(p.investment_amount || 0).toLocaleString("en-IN", {maximumFractionDigits:0})}
                     </td>
                     <td className="py-3 font-mono text-right text-[#f0f0f0]">
-                      {livePrice != null ? `₹${livePrice.toFixed(2)}` : <span className="text-[#333]">—</span>}
+                      {p.entry_price != null ? `₹${Number(p.entry_price).toFixed(2)}` : <span className="text-[#333]">—</span>}
                     </td>
-                    <td className={`py-3 font-mono text-right ${changePct === null ? 'text-[#5a5a5a]' : changePct >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
-                      {changePct !== null ? `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%` : <span className="text-[#333]">—</span>}
+                    <td className="py-3 font-mono text-right text-[#f0f0f0]">
+                      {p.current_price != null 
+                        ? `₹${Number(p.current_price).toFixed(2)}` 
+                        : livePrice != null 
+                          ? `₹${Number(livePrice).toFixed(2)}` 
+                          : <span className="text-[#333]">—</span>}
                     </td>
-                    <td className="py-3 text-center">
-                      <span className="inline-flex px-2 py-0.5 rounded-full bg-[#161616] border border-[#222] font-mono text-[10px] text-[#f0f0f0]">
-                        {p.quality_score || '--'}
-                      </span>
+                    <td className="py-3 font-mono text-right">
+                      {p.return_percent != null
+                        ? <span className={Number(p.return_percent) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}>
+                            {Number(p.return_percent) > 0 ? '+' : ''}{Number(p.return_percent).toFixed(2)}%
+                          </span>
+                        : changePct != null
+                          ? <span className={changePct >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}>
+                              {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
+                            </span>
+                          : <span className="text-[#333]">—</span>}
                     </td>
                     <td className="py-3">
                       <span className="font-mono text-[10px] text-[#5a5a5a] uppercase">{p.bias_tag}</span>
