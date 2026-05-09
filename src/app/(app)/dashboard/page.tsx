@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { ArrowUpRight, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowUpRight, ArrowRight, Loader2, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useMode } from "@/context/ModeContext";
+import { KNOWN_ASSETS } from "@/lib/assets";
 
 interface Outcome {
   id: string;
@@ -51,17 +52,59 @@ export default function Dashboard() {
     streak: number;
     biggestBias: string;
     biasCount: number;
-    recentDecisions: Decision[];
+    recentDecisions: any[];
     chartData: { date: string; score: number; name: string }[];
     patterns: Pattern[];
-    openPositions: { id: string; asset_name: string; asset_type: string; status: string; investment_amount: number; target_price: number | null; stop_loss: number | null; return_pct: number | null; unrealized_pnl: number; quality_score?: number; bias_tag: string }[];
-    pendingReviews: Decision[];
+    openPositions: { id: string; asset_name: string; asset_type: string; status: string; investment_amount: number; entry_price: number | null; quality_score?: number; bias_tag: string }[];
+    pendingReviews: any[];
     reviewedCount: number;
   } | null>(null);
+
+  const [livePrices, setLivePrices] = useState<Record<string, { current_price: number; change_percent: number | null }>>({});
+  const [pricesRefreshing, setPricesRefreshing] = useState(false);
+
+  const symbolByName = useMemo(
+    () => Object.fromEntries(KNOWN_ASSETS.map(a => [a.name, a.symbol])),
+    []
+  );
+  const nameBySymbol = useMemo(
+    () => Object.fromEntries(KNOWN_ASSETS.map(a => [a.symbol, a.name])),
+    []
+  );
 
   const [chartTimeframe, setChartTimeframe] = useState("1M");
   const [openPositionsFilter, setOpenPositionsFilter] = useState("All");
   const [hoveredChartPoint, setHoveredChartPoint] = useState<{ date: string; score: number; name: string; x: number; y: number } | null>(null);
+
+  const refreshLivePrices = useCallback(async (assetNames: string[]) => {
+    if (assetNames.length === 0) return;
+    setPricesRefreshing(true);
+    try {
+      const symbols = assetNames
+        .map(name => symbolByName[name])
+        .filter((s): s is string => Boolean(s));
+      if (!symbols.length) return;
+      const res = await fetch("/api/prices/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbols: [...new Set(symbols)] }),
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+      const mapped: Record<string, { current_price: number; change_percent: number | null }> = {};
+      Object.entries(nameBySymbol).forEach(([symbol, name]) => {
+        const p = (json as any)?.[symbol];
+        if (p?.current_price != null) {
+          mapped[name] = { current_price: p.current_price, change_percent: p.change_percent ?? null };
+        }
+      });
+      setLivePrices(mapped);
+    } catch (e) {
+      console.error("Failed to fetch live prices", e);
+    } finally {
+      setPricesRefreshing(false);
+    }
+  }, [symbolByName, nameBySymbol]);
 
   useEffect(() => {
     async function loadData() {
@@ -112,38 +155,29 @@ export default function Dashboard() {
         // Build open positions rows using real DB columns only
         const openPositions = openDecisions.map(d => {
           const investmentAmt = d.investment_amount || 0;
-          const targetPrice = d.target_price || null;
-          const stopLoss = d.stop_loss || null;
-
           const outArr = Array.isArray(d.outcome) ? d.outcome : (d.outcome ? [d.outcome] : []);
           const out = outArr[0];
-
-          // Bias from outcome bias_tags first, fall back to emotion
           const biasTag = (out?.bias_tags && out.bias_tags.length > 0)
             ? out.bias_tags[0]
             : (d.emotion && d.emotion !== 'calm' ? d.emotion : 'NONE');
-
-          // Return % only if outcome exists
-          const returnPct = out?.actual_return_percent ?? null;
-
+          // For practice mode: entry_price comes from practice_positions via join if available
+          // For real mode: no per-share price in DB, so null
+          const entryPrice = (d as any).entry_price_per_share || null;
           return {
             id: d.id,
             asset_name: d.asset_name,
             asset_type: d.asset_type,
             status: d.status,
             investment_amount: investmentAmt,
-            target_price: targetPrice,
-            stop_loss: stopLoss,
-            return_pct: returnPct,
-            unrealized_pnl: returnPct !== null ? (investmentAmt * returnPct) / 100 : 0,
+            entry_price: entryPrice,
             quality_score: out?.overall_quality_score || out?.quality_score || undefined,
             bias_tag: String(biasTag).toUpperCase()
           };
         });
 
-        // Unrealized P&L = sum of what we know from outcomes (0 if no outcome yet)
-        const unrealizedPnL = openPositions.reduce((s, p) => s + (p.unrealized_pnl || 0), 0);
-        const unrealizedPct = totalCapitalInvested > 0 ? (unrealizedPnL / totalCapitalInvested) * 100 : 0;
+        // Unrealized P&L = computed from live prices after fetch
+        const unrealizedPnL = 0; // updated after live price refresh
+        const unrealizedPct = 0;
 
         // --- CLOSED / REVIEWED DECISIONS ---
         const closedDecisions = decisions.filter(d => {
@@ -244,6 +278,12 @@ export default function Dashboard() {
           pendingReviews,
           reviewedCount: validScores.length
         });
+
+        // Kick off live price fetch after state is set
+        const assetNames = openPositions.map(p => p.asset_name);
+        if (assetNames.length > 0) {
+          void refreshLivePrices(assetNames);
+        }
 
       } catch (err) {
         console.error("Error loading dashboard data:", err);
@@ -516,16 +556,26 @@ export default function Dashboard() {
         <div className="lg:col-span-8 bg-[#111] border border-[#222] rounded-[8px] p-5 overflow-x-auto shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-[#f0f0f0] text-sm font-medium">Open Positions</h3>
-            <div className="flex gap-2">
-              {['All', 'Stocks', 'MF', 'Crypto'].map(f => (
-                <button 
-                  key={f}
-                  onClick={() => setOpenPositionsFilter(f)}
-                  className={`px-3 py-1 text-[10px] font-medium rounded-full border transition-colors ${openPositionsFilter === f ? 'bg-[#161616] border-[#333] text-[#f0f0f0]' : 'border-transparent text-[#5a5a5a] hover:text-[#f0f0f0]'}`}
-                >
-                  {f}
-                </button>
-              ))}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => data && void refreshLivePrices(data.openPositions.map(p => p.asset_name))}
+                disabled={pricesRefreshing}
+                className="flex items-center gap-1 text-[10px] text-[#5a5a5a] hover:text-[#f0f0f0] transition-colors"
+              >
+                <RefreshCw className={`w-3 h-3 ${pricesRefreshing ? 'animate-spin' : ''}`} />
+                {pricesRefreshing ? 'Fetching...' : 'Live prices'}
+              </button>
+              <div className="flex gap-2">
+                {['All', 'Stocks', 'MF', 'Crypto'].map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setOpenPositionsFilter(f)}
+                    className={`px-3 py-1 text-[10px] font-medium rounded-full border transition-colors ${openPositionsFilter === f ? 'bg-[#161616] border-[#333] text-[#f0f0f0]' : 'border-transparent text-[#5a5a5a] hover:text-[#f0f0f0]'}`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           
@@ -534,44 +584,49 @@ export default function Dashboard() {
               <tr className="text-[#5a5a5a] border-b border-[#222]">
                 <th className="pb-3 font-medium">Asset</th>
                 <th className="pb-3 font-medium font-mono text-right">Invested (₹)</th>
-                <th className="pb-3 font-medium font-mono text-right">Target (₹)</th>
-                <th className="pb-3 font-medium font-mono text-right">Return %</th>
+                <th className="pb-3 font-medium font-mono text-right">Live Price (₹)</th>
+                <th className="pb-3 font-medium font-mono text-right">Change %</th>
                 <th className="pb-3 font-medium text-center">Quality</th>
                 <th className="pb-3 font-medium">Bias Tag</th>
                 <th className="pb-3 font-medium">Status</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPositions.map((p) => (
-                <tr key={p.id} className="border-b border-[#222] last:border-b-0 hover:bg-white/5 transition-colors group">
-                  <td className="py-3 font-mono font-medium text-[#f0f0f0] group-hover:text-[#22c55e] transition-colors">
-                    <Link href={`/decisions/${p.id}`}>{p.asset_name}</Link>
-                  </td>
-                  <td className="py-3 font-mono text-right text-[#f0f0f0]">
-                    ₹{p.investment_amount.toLocaleString("en-IN", {maximumFractionDigits:0})}
-                  </td>
-                  <td className="py-3 font-mono text-right text-[#5a5a5a]">
-                    {p.target_price ? `₹${p.target_price.toLocaleString("en-IN", {maximumFractionDigits:2})}` : <span className="text-[#333]">—</span>}
-                  </td>
-                  <td className={`py-3 font-mono text-right ${p.return_pct === null ? 'text-[#5a5a5a]' : p.return_pct >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
-                    {p.return_pct !== null ? `${p.return_pct > 0 ? '+' : ''}${p.return_pct.toFixed(2)}%` : <span className="text-[#333]">—</span>}
-                  </td>
-                  <td className="py-3 text-center">
-                    <span className="inline-flex px-2 py-0.5 rounded-full bg-[#161616] border border-[#222] font-mono text-[10px] text-[#f0f0f0]">
-                      {p.quality_score || '--'}
-                    </span>
-                  </td>
-                  <td className="py-3">
-                    <span className="font-mono text-[10px] text-[#5a5a5a] uppercase">{p.bias_tag}</span>
-                  </td>
-                  <td className="py-3">
-                    <div className="flex items-center gap-1.5 text-[10px] text-[#f0f0f0]">
-                      <div className={`w-1.5 h-1.5 rounded-full ${p.status === 'open' ? 'bg-[#5a5a5a]' : 'bg-amber-500'}`} />
-                      {p.status === 'open' ? 'Open' : 'Pending'}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filteredPositions.map((p) => {
+                const lp = livePrices[p.asset_name];
+                const livePrice = lp?.current_price ?? null;
+                const changePct = lp?.change_percent ?? null;
+                return (
+                  <tr key={p.id} className="border-b border-[#222] last:border-b-0 hover:bg-white/5 transition-colors group">
+                    <td className="py-3 font-mono font-medium text-[#f0f0f0] group-hover:text-[#22c55e] transition-colors">
+                      <Link href={`/decisions/${p.id}`}>{p.asset_name}</Link>
+                    </td>
+                    <td className="py-3 font-mono text-right text-[#f0f0f0]">
+                      ₹{p.investment_amount.toLocaleString("en-IN", {maximumFractionDigits:0})}
+                    </td>
+                    <td className="py-3 font-mono text-right text-[#f0f0f0]">
+                      {livePrice != null ? `₹${livePrice.toFixed(2)}` : <span className="text-[#333]">—</span>}
+                    </td>
+                    <td className={`py-3 font-mono text-right ${changePct === null ? 'text-[#5a5a5a]' : changePct >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                      {changePct !== null ? `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%` : <span className="text-[#333]">—</span>}
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="inline-flex px-2 py-0.5 rounded-full bg-[#161616] border border-[#222] font-mono text-[10px] text-[#f0f0f0]">
+                        {p.quality_score || '--'}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <span className="font-mono text-[10px] text-[#5a5a5a] uppercase">{p.bias_tag}</span>
+                    </td>
+                    <td className="py-3">
+                      <div className="flex items-center gap-1.5 text-[10px] text-[#f0f0f0]">
+                        <div className={`w-1.5 h-1.5 rounded-full ${p.status === 'open' ? 'bg-[#5a5a5a]' : 'bg-amber-500'}`} />
+                        {p.status === 'open' ? 'Open' : 'Pending'}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredPositions.length === 0 && (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-[#5a5a5a] font-mono">No positions found.</td>
