@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, ArrowDownRight, ArrowRight, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -105,14 +105,16 @@ export default function Dashboard() {
         const openDecisions = decisions.filter(d => d.status === "open" || d.status === "pending_review");
         
         const openPositions = openDecisions.map(d => {
-          const mockChange = (Math.random() - 0.5) * 0.1; // +/- 5% mock for now
-          const currentPrice = d.entry_price * (1 + mockChange);
+          const entryPrice = d.entry_price || d.investment_amount || 0;
+          const mockChange = (Math.random() - 0.5) * 0.1;
+          const currentPrice = entryPrice > 0 ? entryPrice * (1 + mockChange) : 0;
           
           const outArr = Array.isArray(d.outcome) ? d.outcome : (d.outcome ? [d.outcome] : []);
           const out = outArr[0];
           
           return {
             ...d,
+            entry_price: entryPrice,
             current_price: currentPrice,
             change_pct: mockChange * 100,
             quality_score: out?.overall_quality_score || out?.quality_score,
@@ -378,7 +380,7 @@ export default function Dashboard() {
                   </div>
                   <p className="text-xs text-[#5a5a5a] truncate">{d.thesis}</p>
                   <div className="flex justify-between items-center mt-1">
-                    <span className="font-mono text-xs text-[#f0f0f0]">₹{d.entry_price.toLocaleString("en-IN")}</span>
+                    <span className="font-mono text-xs text-[#f0f0f0]">₹{(d.entry_price || 0).toLocaleString("en-IN")}</span>
                     <span className="flex items-center gap-1.5 text-[10px] text-[#f0f0f0]">
                       <div className={`w-1.5 h-1.5 rounded-full ${d.status === 'open' ? 'bg-white' : d.status === 'reviewed' ? 'bg-[#22c55e]' : 'bg-amber-500'}`} />
                       {d.status === 'pending_review' ? 'Pending Review' : d.status === 'reviewed' ? 'Reviewed' : 'Open'}
@@ -536,7 +538,7 @@ export default function Dashboard() {
                   <td className="py-3 font-mono font-medium text-[#f0f0f0] group-hover:text-[#22c55e] transition-colors">
                     <Link href={`/decisions/${p.id}`}>{p.asset_name}</Link>
                   </td>
-                  <td className="py-3 font-mono text-right text-[#5a5a5a]">{p.entry_price.toLocaleString("en-IN", {maximumFractionDigits:2})}</td>
+                  <td className="py-3 font-mono text-right text-[#5a5a5a]">{(p.entry_price || 0).toLocaleString("en-IN", {maximumFractionDigits:2})}</td>
                   <td className="py-3 font-mono text-right text-[#f0f0f0]">{p.current_price.toLocaleString("en-IN", {maximumFractionDigits:2})}</td>
                   <td className={`py-3 font-mono text-right ${p.change_pct >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
                     {p.change_pct > 0 ? '+' : ''}{p.change_pct.toFixed(2)}%
