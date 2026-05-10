@@ -257,278 +257,209 @@ export default function PracticePortfolioPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-12">
-      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+      {/* Header */}
+      <motion.div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4" initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <div>
-          <h1 className="font-syne text-4xl font-bold">Practice Portfolio</h1>
-          <p className="text-tx-text-secondary mt-2 max-w-2xl">
-            {isPractice
-              ? "Virtual capital. real discipline. Zero regret tuition."
-              : "This view is optimized for Practice Mode, where you can test ideas before committing real capital."}
-          </p>
+          <h1 className="font-syne text-4xl font-bold text-[#f0f0f0]">Practice Portfolio</h1>
+          <p className="text-[#5a5a5a] text-sm mt-1">{isPractice ? "Virtual capital. real discipline. Zero regret tuition." : "Switch to Practice Mode to use this view."}</p>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={() => loadData(true)}
-            className="px-4 py-2 rounded-xl bg-tx-primary text-tx-bg font-semibold transition-all hover:opacity-90"
-          >
-            <span className="inline-flex items-center gap-2">
-              <RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin text-tx-bg")} />
-              Refresh
-            </span>
+          <button onClick={() => loadData(true)} className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#111] border border-[#222] text-[#f0f0f0] text-sm hover:border-[#333] transition-colors">
+            <RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin text-[#10B981]")} /> Refresh
           </button>
-          <button
-            onClick={handleReset}
-            className="px-4 py-2 rounded-xl border border-tx-danger/40 bg-tx-danger/10 text-tx-danger hover:bg-tx-danger/20"
-          >
+          <button onClick={handleReset} className="px-4 py-2 rounded-full border border-[#ef4444]/40 bg-[#ef4444]/10 text-[#ef4444] text-sm hover:bg-[#ef4444]/20 transition-colors">
             Reset Portfolio
           </button>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4">
-        <div className="glass-card p-6 border border-tx-border">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
-            <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-tx-text-secondary mb-2">Stock price fetcher</p>
-              <h2 className="font-syne text-xl font-bold">Live quote lookup</h2>
+      {error && <div className="p-4 rounded-[8px] bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#ef4444] text-sm">{error}</div>}
+
+      {/* Stats Row 1 */}
+      <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-4" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }}>
+        {[
+          { label: "VIRTUAL CAPITAL", value: `₹${Number(portfolio?.virtual_capital || 0).toLocaleString()}`, icon: <Wallet className="w-4 h-4 text-[#10B981]" /> },
+          { label: "CURRENT VALUE", value: `₹${Number(portfolio?.current_value || 0).toLocaleString()}`, icon: <Gamepad2 className="w-4 h-4 text-[#10B981]" /> },
+          { label: "TOTAL RETURN", value: `${Number(portfolio?.total_return_amount || 0) >= 0 ? "+" : "-"}₹${Math.abs(Number(portfolio?.total_return_amount || 0)).toLocaleString()}`, icon: Number(portfolio?.total_return_amount || 0) >= 0 ? <TrendingUp className="w-4 h-4 text-[#10B981]" /> : <TrendingDown className="w-4 h-4 text-[#ef4444]" />, positive: Number(portfolio?.total_return_amount || 0) >= 0 },
+          { label: "OPEN P&L (LIVE)", value: `${computedOpenPnL >= 0 ? "+" : "-"}₹${Math.abs(computedOpenPnL).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, icon: computedOpenPnL >= 0 ? <TrendingUp className="w-4 h-4 text-[#10B981]" /> : <TrendingDown className="w-4 h-4 text-[#ef4444]" />, positive: computedOpenPnL >= 0 },
+        ].map((s) => (
+          <div key={s.label} className="bg-[#111] border border-[#222] rounded-[8px] p-4 shadow-sm">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-[10px] text-[#5a5a5a] uppercase tracking-widest">{s.label}</span>
+              {s.icon}
             </div>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs uppercase tracking-[0.3em] bg-tx-primary/10 text-tx-primary border border-tx-primary/20">
-              Practice mode
-            </span>
+            <div className={cn("font-mono text-xl font-bold", (s as any).positive === false ? "text-[#ef4444]" : "text-[#f0f0f0]")}>{s.value}</div>
           </div>
+        ))}
+      </motion.div>
 
+      {/* Stats Row 2 */}
+      {metrics && (
+        <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-4" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}>
+          {[
+            { label: "FREE CAPITAL", value: `₹${Number(metrics.free_capital).toLocaleString()}`, icon: <RefreshCw className="w-4 h-4 text-[#10B981]" /> },
+            { label: "OPEN POSITIONS", value: `${metrics.open_positions}`, icon: <Gamepad2 className="w-4 h-4 text-[#10B981]" /> },
+            { label: "UNREALIZED P&L", value: `${computedOpenPnL >= 0 ? "+" : "-"}₹${Math.abs(computedOpenPnL).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, icon: computedOpenPnL >= 0 ? <TrendingUp className="w-4 h-4 text-[#10B981]" /> : <TrendingDown className="w-4 h-4 text-[#ef4444]" />, positive: computedOpenPnL >= 0 },
+          ].map((s) => (
+            <div key={s.label} className="bg-[#111] border border-[#222] rounded-[8px] p-4 shadow-sm">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-[10px] text-[#5a5a5a] uppercase tracking-widest">{s.label}</span>
+                {s.icon}
+              </div>
+              <div className={cn("font-mono text-xl font-bold", (s as any).positive === false ? "text-[#ef4444]" : "text-[#f0f0f0]")}>{s.value}</div>
+            </div>
+          ))}
+        </motion.div>
+      )}
+
+      {/* Main Grid */}
+      <motion.div className="grid grid-cols-1 lg:grid-cols-12 gap-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }}>
+        {/* Price Lookup */}
+        <div className="lg:col-span-7 bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="text-[10px] text-[#5a5a5a] uppercase tracking-widest mb-1">Stock Price Fetcher</p>
+              <h2 className="text-[#f0f0f0] text-sm font-medium">Live quote lookup</h2>
+            </div>
+            <span className="text-[10px] uppercase tracking-widest px-3 py-1 rounded-full bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20">Practice Mode</span>
+          </div>
           <div className="relative">
-            <input
-              type="text"
-              value={priceLookupQuery}
-              onChange={(e) => setPriceLookupQuery(e.target.value)}
-              placeholder="Search by symbol or company name"
-              className="w-full bg-tx-bg border border-tx-border rounded-xl px-4 py-3 text-white focus:outline-none focus:border-tx-primary transition-colors"
-            />
-            <button
-              onClick={() => handleLookupStockPrice()}
-              disabled={priceLookupLoading}
-              className="absolute right-2 top-2 px-4 py-2 rounded-xl bg-tx-primary text-tx-bg font-semibold text-sm transition-all disabled:opacity-50"
-            >
-              {priceLookupLoading ? "Fetching..." : "Fetch"}
+            <input type="text" value={priceLookupQuery} onChange={(e) => setPriceLookupQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLookupStockPrice()} placeholder="Search by symbol or company name" className="w-full bg-[#161616] border border-[#222] rounded-[8px] px-4 py-3 text-[#f0f0f0] text-sm placeholder:text-[#5a5a5a] focus:outline-none focus:border-[#10B981] transition-colors" />
+            <button onClick={() => handleLookupStockPrice()} disabled={priceLookupLoading} className="absolute right-2 top-2 px-4 py-1.5 rounded-[6px] bg-[#10B981] text-[#0A0A14] text-xs font-bold disabled:opacity-50 transition-opacity">
+              {priceLookupLoading ? "..." : "Fetch"}
             </button>
           </div>
-
-          {priceLookupError && (
-            <p className="mt-3 text-sm text-tx-danger">{priceLookupError}</p>
-          )}
-
+          {priceLookupError && <p className="mt-3 text-xs text-[#ef4444]">{priceLookupError}</p>}
           {stockSuggestions.length > 0 && (
             <div className="mt-3 grid grid-cols-2 gap-2">
               {stockSuggestions.map((asset) => (
-                <button
-                  key={asset.symbol}
-                  onClick={() => handleLookupStockPrice(asset.name)}
-                  className="text-left rounded-xl border border-tx-border bg-tx-card px-3 py-3 text-sm text-white transition hover:border-tx-primary hover:bg-tx-primary/10"
-                >
-                  <div className="font-semibold">{asset.name}</div>
-                  <div className="text-[11px] text-tx-text-secondary uppercase tracking-[0.2em]">{asset.symbol}</div>
+                <button key={asset.symbol} onClick={() => handleLookupStockPrice(asset.name)} className="text-left bg-[#161616] border border-[#222] rounded-[6px] px-3 py-2 hover:border-[#10B981]/40 transition-colors">
+                  <div className="text-sm font-medium text-[#f0f0f0]">{asset.name}</div>
+                  <div className="text-[10px] text-[#5a5a5a] uppercase tracking-widest">{asset.symbol}</div>
                 </button>
               ))}
             </div>
           )}
-
           {priceLookupResult && (
-            <div className="mt-5 rounded-3xl border border-tx-border bg-tx-bg/80 p-5">
-              <div className="flex items-center justify-between gap-4">
+            <div className="mt-5 bg-[#161616] border border-[#222] rounded-[8px] p-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-tx-text-secondary">{priceLookupSymbol}</p>
-                  <p className="mt-2 text-2xl font-bold text-white">₹{priceLookupResult.current_price.toFixed(2)}</p>
+                  <p className="text-[10px] text-[#5a5a5a] uppercase tracking-widest mb-1">{priceLookupSymbol}</p>
+                  <p className="font-mono text-2xl font-bold text-[#f0f0f0]">₹{priceLookupResult.current_price.toFixed(2)}</p>
                 </div>
                 {priceLookupResult.change_percent != null && (
-                  <div className={cn(
-                    "rounded-full px-3 py-1 text-sm font-semibold",
-                    priceLookupResult.change_percent >= 0 ? "bg-tx-primary/15 text-tx-primary" : "bg-tx-danger/15 text-tx-danger"
-                  )}>
+                  <span className={cn("font-mono text-sm font-bold px-3 py-1 rounded-full", priceLookupResult.change_percent >= 0 ? "text-[#10B981] bg-[#10B981]/10" : "text-[#ef4444] bg-[#ef4444]/10")}>
                     {priceLookupResult.change_percent >= 0 ? "+" : ""}{priceLookupResult.change_percent.toFixed(2)}%
-                  </div>
+                  </span>
                 )}
               </div>
-              {priceLookupResult.last_updated && (
-                <p className="mt-3 text-xs text-tx-text-secondary">Updated at {new Date(priceLookupResult.last_updated).toLocaleTimeString("en-IN")}</p>
-              )}
+              {priceLookupResult.last_updated && <p className="text-[10px] text-[#5a5a5a] mt-2">Updated {new Date(priceLookupResult.last_updated).toLocaleTimeString("en-IN")}</p>}
             </div>
           )}
         </div>
 
-        <div className="glass-card p-6 border border-tx-border">
-          <div className="flex items-center justify-between mb-4">
+        {/* Live Feed */}
+        <div className="lg:col-span-5 bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-tx-text-secondary">Live price refresh</p>
-              <h2 className="font-syne text-xl font-bold">Open position feed</h2>
+              <p className="text-[10px] text-[#5a5a5a] uppercase tracking-widest mb-1">Live Price Refresh</p>
+              <h2 className="text-[#f0f0f0] text-sm font-medium">Open position feed</h2>
             </div>
-            <span className="text-xs uppercase tracking-[0.35em] px-3 py-1 rounded-full bg-tx-primary/10 text-tx-primary border border-tx-primary/20">
+            <span className={cn("text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border", openAssetNames.length ? "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20" : "bg-[#222] text-[#5a5a5a] border-[#333]")}>
               {openAssetNames.length ? "Streaming" : "Idle"}
             </span>
           </div>
-          <p className="text-sm text-tx-text-secondary">
-            {lastPriceRefresh ? `Last refreshed at ${lastPriceRefresh}` : "Fetching latest prices for open practice positions..."}
-          </p>
-          <div className="mt-5 space-y-3">
+          <p className="text-[10px] text-[#5a5a5a] mb-4">{lastPriceRefresh ? `Last refreshed at ${lastPriceRefresh}` : "Fetching prices..."}</p>
+          <div className="space-y-2">
             {openAssetNames.length === 0 ? (
-              <p className="text-sm text-tx-text-secondary">Open a practice trade to see live price updates here.</p>
-            ) : (
-              openAssetNames.map((assetName) => {
-                const price = livePrices[assetName];
-                return (
-                  <div key={assetName} className="flex items-center justify-between gap-4 rounded-xl border border-tx-border/70 bg-tx-bg/50 px-4 py-3">
-                    <div>
-                      <p className="font-medium text-white">{assetName}</p>
-                      <p className="text-xs text-tx-text-secondary">Live stock price</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-mono text-white">{price ? `₹${price.current_price.toFixed(2)}` : "–"}</p>
-                      {price?.change_percent != null && (
-                        <p className={cn(
-                          "text-xs font-semibold",
-                          price.change_percent >= 0 ? "text-tx-primary" : "text-tx-danger"
-                        )}>
-                          {price.change_percent >= 0 ? "+" : ""}{price.change_percent.toFixed(2)}%
-                        </p>
-                      )}
-                    </div>
+              <p className="text-sm text-[#5a5a5a] py-6 text-center">Open a practice trade to see live prices here.</p>
+            ) : openAssetNames.map((assetName) => {
+              const price = livePrices[assetName];
+              return (
+                <div key={assetName} className="flex items-center justify-between bg-[#161616] border border-[#222] rounded-[6px] px-4 py-3 hover:border-[#333] transition-colors">
+                  <div>
+                    <p className="text-sm font-medium text-[#f0f0f0]">{assetName}</p>
+                    <p className="text-[10px] text-[#5a5a5a]">Live stock price</p>
                   </div>
-                );
-              })
-            )}
+                  <div className="text-right">
+                    <p className="font-mono text-sm text-[#f0f0f0]">{price ? `₹${price.current_price.toFixed(2)}` : "–"}</p>
+                    {price?.change_percent != null && (
+                      <p className={cn("text-[11px] font-mono font-bold", price.change_percent >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>
+                        {price.change_percent >= 0 ? "+" : ""}{price.change_percent.toFixed(2)}%
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {error && <div className="p-4 rounded-xl bg-tx-danger/10 border border-tx-danger/30 text-tx-danger">{error}</div>}
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card label="Virtual Capital" value={`₹${Number(portfolio?.virtual_capital || 0).toLocaleString()}`} icon={<Wallet className="w-5 h-5 text-tx-primary" />} />
-        <Card label="Current Value" value={`₹${Number(portfolio?.current_value || 0).toLocaleString()}`} icon={<Gamepad2 className="w-5 h-5 text-tx-secondary" />} />
-        <Card
-          label="Total Return"
-          value={`${Number(portfolio?.total_return_amount || 0) >= 0 ? "+" : "-"}₹${Math.abs(Number(portfolio?.total_return_amount || 0)).toLocaleString()}`}
-          icon={Number(portfolio?.total_return_amount || 0) >= 0 ? <TrendingUp className="w-5 h-5 text-tx-primary" /> : <TrendingDown className="w-5 h-5 text-tx-danger" />}
-        />
-        <Card
-          label="Open P&L (Live)"
-          value={`${computedOpenPnL >= 0 ? "+" : "-"}₹${Math.abs(computedOpenPnL).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-          icon={computedOpenPnL >= 0 ? <TrendingUp className="w-5 h-5 text-tx-primary" /> : <TrendingDown className="w-5 h-5 text-tx-danger" />}
-        />
-      </div>
-      {metrics && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card
-            label="Free Capital"
-            value={`₹${Number(metrics.free_capital).toLocaleString()}`}
-            icon={<RefreshCw className="w-5 h-5 text-tx-secondary" />}
-          />
-          <Card
-            label="Open Positions"
-            value={`${metrics.open_positions}`}
-            icon={<Gamepad2 className="w-5 h-5 text-tx-primary" />}
-          />
-          <Card
-            label="Unrealized P&L"
-            value={`${computedOpenPnL >= 0 ? "+" : "-"}₹${Math.abs(computedOpenPnL).toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-            icon={computedOpenPnL >= 0 ? <TrendingUp className="w-5 h-5 text-tx-primary" /> : <TrendingDown className="w-5 h-5 text-tx-danger" />}
-          />
-        </div>
-      )}
-
-      <section className="glass-card p-6">
-        <h2 className="font-syne text-xl font-bold mb-4">Open Positions</h2>
-        <div className="space-y-3">
-          {positions.filter((p) => p.status === "open").length === 0 && (
-            <p className="text-tx-text-secondary py-10 text-center">
-              No practice trades yet. ₹10,00,000 is just sitting there. Bro what are you waiting for. 🎮
-            </p>
-          )}
-          {positions
-            .filter((p) => p.status === "open")
-            .map((position) => {
+      {/* Open Positions */}
+      <motion.div className="bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5 }}>
+        <h2 className="text-[#f0f0f0] text-sm font-medium mb-5">Open Positions</h2>
+        {positions.filter((p) => p.status === "open").length === 0 ? (
+          <p className="text-[#5a5a5a] text-sm py-10 text-center">No practice trades yet. ₹10,00,000 is just sitting there. 🎮</p>
+        ) : (
+          <div className="space-y-3">
+            {positions.filter((p) => p.status === "open").map((position) => {
               const livePrice = livePrices[position.asset_name];
               const mark = livePrice?.current_price ?? Number(position.current_price);
               const priceChange = livePrice?.change_percent;
               const pnl = mark * Number(position.quantity) - Number(position.investment_amount);
               const pnlPct = Number(position.investment_amount) > 0 ? (pnl / Number(position.investment_amount)) * 100 : 0;
               return (
-                <motion.div key={position.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 rounded-xl border border-tx-border bg-tx-bg/50 flex items-center justify-between gap-4">
-                  <div>
-                    <div className="font-syne font-bold text-white">{position.asset_name}</div>
-                    <div className="text-xs text-tx-text-muted uppercase">{position.asset_type.replace("_", " ")} • Qty {position.quantity}</div>
-                    <div className="text-xs text-tx-text-secondary mt-1">
+                <motion.div key={position.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center justify-between bg-[#161616] border border-[#222] rounded-[6px] px-4 py-4 hover:border-[#333] transition-colors gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-syne font-bold text-[#f0f0f0] text-sm">{position.asset_name}</p>
+                    <p className="text-[10px] text-[#5a5a5a] uppercase tracking-widest mt-0.5">{position.asset_type.replace("_", " ")} • QTY {position.quantity}</p>
+                    <p className="text-[11px] text-[#5a5a5a] mt-1">
                       Entry ₹{Number(position.entry_price).toFixed(2)} • Live ₹{mark.toFixed(2)}
                       {priceChange != null && (
-                        <span className={cn(
-                          "ml-3 font-mono text-xs",
-                          priceChange >= 0 ? "text-tx-primary" : "text-tx-danger"
-                        )}>
+                        <span className={cn("ml-2 font-mono", priceChange >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>
                           {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(2)}%
                         </span>
                       )}
-                    </div>
+                    </p>
                   </div>
                   <div className="text-right">
-                    <div className={cn("font-mono font-bold", pnl >= 0 ? "text-tx-primary" : "text-tx-danger")}>
-                      {pnl >= 0 ? "+" : "-"}₹{Math.abs(pnl).toFixed(2)}
-                    </div>
-                    <div className={cn("text-xs", pnl >= 0 ? "text-tx-primary" : "text-tx-danger")}>
-                      {pnl >= 0 ? "+" : ""}{pnlPct.toFixed(2)}%
-                    </div>
+                    <p className={cn("font-mono font-bold text-sm", pnl >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>{pnl >= 0 ? "+" : "-"}₹{Math.abs(pnl).toFixed(2)}</p>
+                    <p className={cn("text-[11px] font-mono", pnl >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>{pnl >= 0 ? "+" : ""}{pnlPct.toFixed(2)}%</p>
                   </div>
-                  <button
-                    onClick={() => handleClosePosition(position)}
-                    disabled={closingPositionId === position.id}
-                    className="px-3 py-2 rounded-lg border border-tx-danger/40 bg-tx-danger/10 text-tx-danger hover:bg-tx-danger/20 disabled:opacity-50"
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <XCircle className="w-4 h-4" />
-                      {closingPositionId === position.id ? "Closing..." : "Close"}
-                    </span>
+                  <button onClick={() => handleClosePosition(position)} disabled={closingPositionId === position.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] border border-[#ef4444]/40 bg-[#ef4444]/10 text-[#ef4444] text-xs hover:bg-[#ef4444]/20 disabled:opacity-50 transition-colors flex-shrink-0">
+                    <XCircle className="w-3.5 h-3.5" />{closingPositionId === position.id ? "Closing..." : "Close"}
                   </button>
                 </motion.div>
               );
             })}
-        </div>
-      </section>
+          </div>
+        )}
+      </motion.div>
 
-      <section className="glass-card p-6">
-        <h2 className="font-syne text-xl font-bold mb-4">Closed Positions</h2>
-        <div className="space-y-3">
-          {positions.filter((p) => p.status === "closed").length === 0 && (
-            <p className="text-tx-text-secondary py-8 text-center">
-              No closed practice trades yet. Close a position to see how your thesis played out.
-            </p>
-          )}
-          {positions
-            .filter((p) => p.status === "closed")
-            .map((position) => (
-              <div key={position.id} className="p-4 rounded-xl border border-tx-border bg-tx-bg/50 flex items-center justify-between">
+      {/* Closed Positions */}
+      <motion.div className="bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.5 }}>
+        <h2 className="text-[#f0f0f0] text-sm font-medium mb-5">Closed Positions</h2>
+        {positions.filter((p) => p.status === "closed").length === 0 ? (
+          <p className="text-[#5a5a5a] text-sm py-8 text-center">No closed practice trades yet. Close a position to see how your thesis played out.</p>
+        ) : (
+          <div className="space-y-2">
+            {positions.filter((p) => p.status === "closed").map((position) => (
+              <div key={position.id} className="flex items-center justify-between bg-[#161616] border border-[#222] rounded-[6px] px-4 py-3 hover:border-[#333] transition-colors">
                 <div>
-                  <div className="font-medium">{position.asset_name}</div>
-                  <div className="text-xs text-tx-text-muted">Closed {position.closed_at ? new Date(position.closed_at).toLocaleDateString("en-IN") : "-"}</div>
+                  <p className="text-sm font-medium text-[#f0f0f0]">{position.asset_name}</p>
+                  <p className="text-[10px] text-[#5a5a5a] mt-0.5">Closed {position.closed_at ? new Date(position.closed_at).toLocaleDateString("en-IN") : "-"} • Exit ₹{Number(position.exit_price || 0).toFixed(2)}</p>
                 </div>
-                <div className={cn("font-mono font-bold", Number(position.return_amount) >= 0 ? "text-tx-primary" : "text-tx-danger")}>
-                  {Number(position.return_amount) >= 0 ? "+" : "-"}₹{Math.abs(Number(position.return_amount)).toFixed(2)}
+                <div className="text-right">
+                  <p className={cn("font-mono font-bold text-sm", Number(position.return_amount) >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>{Number(position.return_amount) >= 0 ? "+" : "-"}₹{Math.abs(Number(position.return_amount)).toFixed(2)}</p>
+                  <p className={cn("text-[11px] font-mono", Number(position.return_percent) >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>{Number(position.return_percent) >= 0 ? "+" : ""}{Number(position.return_percent).toFixed(2)}%</p>
                 </div>
               </div>
             ))}
-        </div>
-      </section>
-    </div>
+          </div>
+        )}
+      </motion.div>
   );
 }
 
-function Card({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
-  return (
-    <div className="glass-card p-5">
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-xs uppercase tracking-wider text-tx-text-secondary">{label}</span>
-        {icon}
-      </div>
-      <div className="font-mono text-2xl font-bold">{value}</div>
-    </div>
-  );
-}
