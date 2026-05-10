@@ -296,72 +296,57 @@ function WatchlistCard({ item, onRefresh, onBuy, onSkip, onEdit, onDelete }:
 
   return (
     <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      className="glass-card p-5 border border-tx-border hover:border-tx-primary/30 transition-colors">
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-syne font-bold text-white text-lg">{item.asset_name}</h3>
-            {item.asset_symbol && <span className="text-xs font-mono text-tx-primary bg-tx-primary/10 px-2 py-0.5 rounded border border-tx-primary/20">{item.asset_symbol}</span>}
-            <span className={cn("text-xs px-2 py-0.5 rounded-full border font-medium",
-              item.status === "watching" ? "bg-blue-500/10 text-blue-400 border-blue-500/30" :
-              item.status === "bought" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" :
-              "bg-red-500/10 text-red-400 border-red-500/30"
+      className="bg-[#111] border border-[#222] rounded-[28px] p-6 shadow-sm hover:border-tx-primary/30 transition-colors">
+      <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3 mb-2">
+            <h3 className="font-syne text-lg font-semibold text-white truncate">{item.asset_name}</h3>
+            {item.asset_symbol && <span className="font-mono text-[11px] text-tx-primary bg-tx-primary/10 border border-tx-primary/20 rounded-full px-2 py-1">{item.asset_symbol}</span>}
+            <span className={cn("inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold border uppercase tracking-[0.24em]",
+              item.status === "watching" ? "bg-blue-500/10 text-blue-300 border-blue-500/20" :
+              item.status === "bought" ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" :
+              "bg-red-500/10 text-red-300 border-red-500/20"
             )}>{item.status}</span>
           </div>
-          <p className="text-xs text-tx-text-muted mt-1">Watching for {watchedDays}d · {item.asset_type}</p>
+          <p className="text-xs text-tx-text-muted">Watching for {watchedDays}d · {item.asset_type}</p>
         </div>
+
         <div className="text-right">
           {item.current_price ? (
             <>
-              <div className="font-mono font-bold text-white">₹{item.current_price.toLocaleString()}</div>
+              <div className="font-mono text-2xl font-semibold text-white">₹{item.current_price.toLocaleString()}</div>
               {priceChange !== null && (
-                <div className={cn("flex items-center justify-end gap-1 text-xs font-medium mt-0.5",
-                  priceChange >= 0 ? "text-emerald-400" : "text-red-400")}>
-                  {priceChange >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                <div className={cn("mt-2 text-xs font-medium", priceChange >= 0 ? "text-emerald-300" : "text-red-300")}> 
                   {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(2)}% since added
                 </div>
               )}
             </>
-          ) : <span className="text-tx-text-muted text-sm">No price</span>}
+          ) : <span className="text-xs text-tx-text-muted">Price unavailable</span>}
         </div>
       </div>
 
-      {/* Alerts */}
-      <div className="flex flex-wrap gap-2 mb-3">
-        {isAtTarget && <span className="text-xs px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-lg">🎯 At Target Price</span>}
-        {isAboveMax && <span className="text-xs px-2 py-1 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg">⚠️ Above Max Entry</span>}
-        {isReviewDue && <span className="text-xs px-2 py-1 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 rounded-lg">🔔 Review Due</span>}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {isAtTarget && <span className="text-[11px] px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">At target price</span>}
+        {isAboveMax && <span className="text-[11px] px-3 py-1 rounded-full bg-red-500/10 text-red-300 border border-red-500/20">Above max entry</span>}
+        {isReviewDue && <span className="text-[11px] px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-300 border border-yellow-500/20">Review due</span>}
       </div>
 
-      {/* Thesis */}
-      <p className="text-sm text-tx-text-secondary italic mb-4 line-clamp-2">"{item.watching_thesis}"</p>
+      <p className="text-sm text-tx-text-secondary italic mb-5 line-clamp-2">"{item.watching_thesis}"</p>
 
-      {/* Price targets */}
       {(item.target_entry_price || item.max_entry_price) && (
-        <div className="flex gap-4 text-xs text-tx-text-muted mb-4">
-          {item.target_entry_price && <span>🎯 Target: <span className="text-white font-mono">₹{item.target_entry_price}</span></span>}
-          {item.max_entry_price && <span>🚫 Max: <span className="text-white font-mono">₹{item.max_entry_price}</span></span>}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-tx-text-muted mb-5">
+          {item.target_entry_price && <div className="rounded-2xl bg-[#0b0b12] border border-[#21212d] px-4 py-3">Target entry <span className="font-mono text-white">₹{item.target_entry_price}</span></div>}
+          {item.max_entry_price && <div className="rounded-2xl bg-[#0b0b12] border border-[#21212d] px-4 py-3">Max entry <span className="font-mono text-white">₹{item.max_entry_price}</span></div>}
         </div>
       )}
 
-      {/* Actions */}
       {item.status === "watching" && (
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={onBuy} className="flex items-center gap-1 px-3 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-medium hover:bg-emerald-500/20 transition-colors">
-            <CheckCircle className="w-3.5 h-3.5" /> Mark as Bought
-          </button>
-          <button onClick={onSkip} className="flex items-center gap-1 px-3 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg text-xs font-medium hover:bg-red-500/20 transition-colors">
-            <XCircle className="w-3.5 h-3.5" /> Skip
-          </button>
-          <button onClick={onRefresh} className="flex items-center gap-1 px-3 py-2 bg-tx-card border border-tx-border rounded-lg text-xs text-tx-text-secondary hover:text-white transition-colors">
-            <RefreshCw className="w-3.5 h-3.5" /> Refresh
-          </button>
-          <button onClick={onEdit} className="flex items-center gap-1 px-3 py-2 bg-tx-card border border-tx-border rounded-lg text-xs text-tx-text-secondary hover:text-white transition-colors">
-            <Edit2 className="w-3.5 h-3.5" /> Edit
-          </button>
-          <button onClick={onDelete} className="ml-auto p-2 text-tx-text-muted hover:text-red-400 transition-colors">
-            <Trash2 className="w-4 h-4" />
-          </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={onBuy} className="w-full rounded-2xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/15 transition-colors">Mark as Bought</button>
+          <button onClick={onSkip} className="w-full rounded-2xl bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/15 transition-colors">Skip</button>
+          <button onClick={onRefresh} className="w-full rounded-2xl bg-[#0b0b12] border border-[#21212d] px-3 py-2 text-xs text-tx-text-secondary hover:text-white transition-colors">Refresh</button>
+          <button onClick={onEdit} className="w-full rounded-2xl bg-[#0b0b12] border border-[#21212d] px-3 py-2 text-xs text-tx-text-secondary hover:text-white transition-colors">Edit</button>
+          <button onClick={onDelete} className="w-full rounded-2xl border border-[#21212d] px-3 py-2 text-xs text-tx-text-muted hover:text-red-300 transition-colors">Delete</button>
         </div>
       )}
       {item.status !== "watching" && item.action_taken && (
@@ -466,14 +451,14 @@ export default function WatchlistPage() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Watching", value: counts.watching, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
-          { label: "Bought", value: counts.bought, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-          { label: "Skipped", value: counts.skipped, color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
-          { label: "Review Due", value: counts.review_due, color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/20" },
+          { label: "Watching", value: counts.watching, accent: "text-blue-300 border-blue-500/20 bg-blue-500/5" },
+          { label: "Bought", value: counts.bought, accent: "text-emerald-300 border-emerald-500/20 bg-emerald-500/5" },
+          { label: "Skipped", value: counts.skipped, accent: "text-red-300 border-red-500/20 bg-red-500/5" },
+          { label: "Review Due", value: counts.review_due, accent: "text-yellow-300 border-yellow-500/20 bg-yellow-500/5" },
         ].map(s => (
-          <div key={s.label} className={cn("glass-card p-5 border", s.bg)}>
-            <div className={cn("font-mono text-4xl font-bold", s.color)}>{s.value}</div>
-            <div className="text-sm text-tx-text-secondary mt-1">{s.label}</div>
+          <div key={s.label} className={cn("bg-[#111] border border-[#222] rounded-[24px] p-5 shadow-sm", s.accent)}>
+            <div className="text-xs uppercase tracking-[0.35em] text-tx-text-muted mb-3">{s.label}</div>
+            <div className="font-syne text-3xl font-semibold text-white">{s.value}</div>
           </div>
         ))}
       </div>
@@ -482,8 +467,9 @@ export default function WatchlistPage() {
       <div className="flex gap-2 flex-wrap border-b border-tx-border pb-4">
         {TABS.map(t => (
           <button key={t.key} onClick={() => setFilter(t.key)}
-            className={cn("px-4 py-2 rounded-full text-sm font-medium transition-colors",
-              filter === t.key ? "bg-tx-primary text-tx-bg" : "text-tx-text-secondary hover:text-white bg-tx-card border border-tx-border")}>
+            className={cn("px-4 py-2 rounded-full text-sm font-medium transition-colors border text-sm",
+              filter === t.key ? "bg-tx-primary text-tx-bg border-tx-primary/30" : "bg-[#0d0d17] text-tx-text-secondary border border-[#222] hover:border-tx-primary/30 hover:text-white")}
+          >
             {t.label}
           </button>
         ))}
