@@ -195,6 +195,14 @@ export default function Dashboard() {
           unrealizedPct = totalCapitalInvested > 0 ? (unrealizedPnL / totalCapitalInvested) * 100 : 0;
 
           const positions = Array.isArray(positionsJson?.positions) ? positionsJson.positions : [];
+          
+          decisions.forEach(d => {
+            const pos = positions.find((p: any) => p.decision_id === d.id);
+            if (pos && pos.entry_price != null) {
+              d.entry_price = Number(pos.entry_price);
+            }
+          });
+
           openPositions = positions
             .filter((p: any) => p.status === 'open')
             .map((p: any) => {
