@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown,
   Minus, Brain, BarChart2, Calendar, DollarSign, Target, Shield,
-  Loader2, AlertCircle, CheckCircle2, Clock, XCircle
+  Loader2, AlertCircle, CheckCircle2, Clock, XCircle, Activity
 } from "lucide-react";
 import { cn, getDecisionQualityScore } from "@/lib/utils";
 import Link from "next/link";
