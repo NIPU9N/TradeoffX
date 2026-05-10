@@ -345,41 +345,6 @@ export default function Dashboard() {
     loadData();
   }, [mode]);
 
-  if (loading || !data) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="w-8 h-8 text-tx-accent animate-spin" />
-        <p className="text-sm text-tx-text-secondary font-mono">Fetching intelligence...</p>
-      </div>
-    );
-  }
-
-  // Handle Chart Interaction
-  const handleChartMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const percentX = Math.max(0, Math.min(1, x / rect.width));
-    const idx = Math.min(data.chartData.length - 1, Math.round(percentX * (data.chartData.length - 1)));
-    
-    setHoveredChartPoint({
-      ...data.chartData[idx],
-      x: (idx / (data.chartData.length - 1)) * 100,
-      y
-    });
-  };
-
-  const chartMax = 100;
-  const chartMin = 0;
-  const chartPoints = data.chartData.map((d, i) => {
-    const x = (i / (data.chartData.length - 1)) * 100;
-    const y = 100 - ((d.score - chartMin) / (chartMax - chartMin)) * 100;
-    return `${x},${y}`;
-  }).join(' ');
-
-  const bestDecision = Math.max(...data.chartData.map(d => d.score));
-  const worstDecision = Math.min(...data.chartData.map(d => d.score));
-
   const derivedData = useMemo(() => {
     if (!data) return null;
     let totalInvested = 0;
@@ -427,6 +392,41 @@ export default function Dashboard() {
       enrichedPositions
     };
   }, [data, livePrices]);
+
+  if (loading || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Loader2 className="w-8 h-8 text-tx-accent animate-spin" />
+        <p className="text-sm text-tx-text-secondary font-mono">Fetching intelligence...</p>
+      </div>
+    );
+  }
+
+  // Handle Chart Interaction
+  const handleChartMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const percentX = Math.max(0, Math.min(1, x / rect.width));
+    const idx = Math.min(data.chartData.length - 1, Math.round(percentX * (data.chartData.length - 1)));
+    
+    setHoveredChartPoint({
+      ...data.chartData[idx],
+      x: (idx / (data.chartData.length - 1)) * 100,
+      y
+    });
+  };
+
+  const chartMax = 100;
+  const chartMin = 0;
+  const chartPoints = data.chartData.map((d, i) => {
+    const x = (i / (data.chartData.length - 1)) * 100;
+    const y = 100 - ((d.score - chartMin) / (chartMax - chartMin)) * 100;
+    return `${x},${y}`;
+  }).join(' ');
+
+  const bestDecision = Math.max(...data.chartData.map(d => d.score));
+  const worstDecision = Math.min(...data.chartData.map(d => d.score));
 
   const filteredPositions = (derivedData?.enrichedPositions || data.openPositions).filter(p => {
     if (openPositionsFilter === "All") return true;
