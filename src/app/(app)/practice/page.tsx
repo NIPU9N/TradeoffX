@@ -460,6 +460,7 @@ export default function PracticePortfolioPage() {
           </div>
         )}
       </motion.div>
+    </div>
   );
 }
 
