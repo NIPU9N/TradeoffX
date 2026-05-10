@@ -64,6 +64,8 @@ export default function Dashboard() {
       entry_price: number | null; 
       current_price?: number | null;
       return_percent?: number | null;
+      display_current_price?: number | null;
+      display_return_percent?: number | null;
       quality_score?: number; 
       bias_tag: string 
     }[];
