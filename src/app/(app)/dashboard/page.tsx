@@ -378,7 +378,55 @@ export default function Dashboard() {
   const bestDecision = Math.max(...data.chartData.map(d => d.score));
   const worstDecision = Math.min(...data.chartData.map(d => d.score));
 
-  const filteredPositions = data.openPositions.filter(p => {
+  const derivedData = useMemo(() => {
+    if (!data) return null;
+    let totalInvested = 0;
+    let totalCurrentValue = 0;
+    
+    const enrichedPositions = data.openPositions.map(p => {
+      const lp = livePrices[p.asset_name];
+      const livePrice = lp?.current_price;
+      
+      const currentPrice = livePrice || p.current_price || p.entry_price || 0;
+      const invested = p.investment_amount;
+      const quantity = p.entry_price && p.entry_price > 0 ? invested / p.entry_price : 0;
+      const currentValue = quantity * currentPrice;
+      
+      let returnPct = p.return_percent;
+      if (p.status === 'open' || p.status === 'pending_review') {
+          if (p.entry_price && p.entry_price > 0 && currentPrice > 0) {
+             returnPct = ((currentPrice - p.entry_price) / p.entry_price) * 100;
+          }
+      }
+      
+      if (p.status === 'open' || p.status === 'pending_review') {
+         totalInvested += invested;
+         totalCurrentValue += currentValue;
+      }
+      
+      return {
+        ...p,
+        display_current_price: currentPrice,
+        display_return_percent: returnPct
+      };
+    });
+    
+    let unrealizedPnL = data.unrealizedPnL;
+    let unrealizedPct = data.unrealizedPct;
+    
+    if (totalInvested > 0 && Object.keys(livePrices).length > 0) {
+      unrealizedPnL = totalCurrentValue - totalInvested;
+      unrealizedPct = (unrealizedPnL / totalInvested) * 100;
+    }
+    
+    return {
+      unrealizedPnL,
+      unrealizedPct,
+      enrichedPositions
+    };
+  }, [data, livePrices]);
+
+  const filteredPositions = (derivedData?.enrichedPositions || data.openPositions).filter(p => {
     if (openPositionsFilter === "All") return true;
     if (openPositionsFilter === "Stocks") return p.asset_type === "stock";
     if (openPositionsFilter === "MF") return p.asset_type === "mutual_fund";
@@ -412,9 +460,9 @@ export default function Dashboard() {
             <p className="text-[10px] text-[#5a5a5a] mt-1">{data.openPositions.length} open position{data.openPositions.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="mt-4">
-            <span className={`font-mono text-xs ${(isPractice ? data.unrealizedPnL : data.totalRealizedPnL) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+            <span className={`font-mono text-xs ${(isPractice ? (derivedData?.unrealizedPnL ?? data.unrealizedPnL) : data.totalRealizedPnL) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
               {isPractice ? (
-                <>{data.unrealizedPnL >= 0 ? '+' : ''}{data.unrealizedPct.toFixed(2)}% unrealized</>
+                <>{(derivedData?.unrealizedPnL ?? data.unrealizedPnL) >= 0 ? '+' : ''}{(derivedData?.unrealizedPct ?? data.unrealizedPct).toFixed(2)}% unrealized</>
               ) : (
                 <>{data.totalRealizedPct >= 0 ? '+' : ''}{data.totalRealizedPct.toFixed(2)}% realized</>
               )}
@@ -446,14 +494,14 @@ export default function Dashboard() {
               {isPractice ? 'Unrealized P&L' : 'Total Profit Made'}
             </h3>
             <div className="flex items-baseline gap-2">
-              <span className={`text-3xl font-mono tracking-tight ${(isPractice ? data.unrealizedPnL : data.totalRealizedPnL) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
-                {(isPractice ? data.unrealizedPnL : data.totalRealizedPnL) >= 0 ? '+' : ''}₹{Math.abs(isPractice ? data.unrealizedPnL : data.totalRealizedPnL).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+              <span className={`text-3xl font-mono tracking-tight ${(isPractice ? (derivedData?.unrealizedPnL ?? data.unrealizedPnL) : data.totalRealizedPnL) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                {(isPractice ? (derivedData?.unrealizedPnL ?? data.unrealizedPnL) : data.totalRealizedPnL) >= 0 ? '+' : ''}₹{Math.abs(isPractice ? (derivedData?.unrealizedPnL ?? data.unrealizedPnL) : data.totalRealizedPnL).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
               </span>
             </div>
           </div>
           <div className="mt-4 text-xs">
-            <span className={`font-mono ${(isPractice ? data.unrealizedPct : data.totalRealizedPct) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
-              {(isPractice ? data.unrealizedPct : data.totalRealizedPct) >= 0 ? '+' : ''}{(isPractice ? data.unrealizedPct : data.totalRealizedPct).toFixed(2)}%
+            <span className={`font-mono ${(isPractice ? (derivedData?.unrealizedPct ?? data.unrealizedPct) : data.totalRealizedPct) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+              {(isPractice ? (derivedData?.unrealizedPct ?? data.unrealizedPct) : data.totalRealizedPct) >= 0 ? '+' : ''}{(isPractice ? (derivedData?.unrealizedPct ?? data.unrealizedPct) : data.totalRealizedPct).toFixed(2)}%
             </span>
             <span className="text-[#5a5a5a] ml-1">{isPractice ? 'on open positions' : 'across closed trades'}</span>
           </div>
@@ -635,7 +683,7 @@ export default function Dashboard() {
                 <th className="pb-3 font-medium font-mono text-right">Entry Price (₹)</th>
                 <th className="pb-3 font-medium font-mono text-right">Current (₹)</th>
                 <th className="pb-3 font-medium font-mono text-right">Return %</th>
-                <th className="pb-3 font-medium">Bias Tag</th>
+                <th className="pb-3 pl-6 font-medium">Bias Tag</th>
                 <th className="pb-3 font-medium">Status</th>
               </tr>
             </thead>
@@ -657,24 +705,18 @@ export default function Dashboard() {
                       {p.entry_price != null ? `₹${Number(p.entry_price).toFixed(2)}` : <span className="text-[#333]">—</span>}
                     </td>
                     <td className="py-3 font-mono text-right text-[#f0f0f0]">
-                      {p.current_price != null 
-                        ? `₹${Number(p.current_price).toFixed(2)}` 
-                        : livePrice != null 
-                          ? `₹${Number(livePrice).toFixed(2)}` 
-                          : <span className="text-[#333]">—</span>}
+                      {p.display_current_price != null 
+                        ? `₹${Number(p.display_current_price).toFixed(2)}` 
+                        : <span className="text-[#333]">—</span>}
                     </td>
                     <td className="py-3 font-mono text-right">
-                      {p.return_percent != null
-                        ? <span className={Number(p.return_percent) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}>
-                            {Number(p.return_percent) > 0 ? '+' : ''}{Number(p.return_percent).toFixed(2)}%
+                      {p.display_return_percent != null
+                        ? <span className={Number(p.display_return_percent) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}>
+                            {Number(p.display_return_percent) > 0 ? '+' : ''}{Number(p.display_return_percent).toFixed(2)}%
                           </span>
-                        : changePct != null
-                          ? <span className={changePct >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}>
-                              {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
-                            </span>
-                          : <span className="text-[#333]">—</span>}
+                        : <span className="text-[#333]">—</span>}
                     </td>
-                    <td className="py-3">
+                    <td className="py-3 pl-6">
                       <span className="font-mono text-[10px] text-[#5a5a5a] uppercase">{p.bias_tag}</span>
                     </td>
                     <td className="py-3">
