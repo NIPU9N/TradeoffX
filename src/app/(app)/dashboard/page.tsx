@@ -411,24 +411,36 @@ export default function Dashboard() {
   if (loading || !data) {
     return (
       <motion.div 
-        className="flex flex-col items-center justify-center min-h-[60vh] gap-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        className="flex flex-col items-center justify-center min-h-[60vh] gap-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, ease: "easeInOut" }}
       >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        >
-          <Loader2 className="w-8 h-8 text-tx-accent" />
-        </motion.div>
+        {/* Animated dots loader */}
+        <div className="flex items-center justify-center gap-2">
+          <motion.div
+            className="w-2.5 h-2.5 rounded-full bg-[#22c55e]"
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            className="w-2.5 h-2.5 rounded-full bg-[#22c55e]"
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+          />
+          <motion.div
+            className="w-2.5 h-2.5 rounded-full bg-[#22c55e]"
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
+          />
+        </div>
         <motion.p 
-          className="text-sm text-tx-text-secondary font-mono"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
+          className="text-sm text-[#5a5a5a] font-mono tracking-wide"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
         >
-          Fetching intelligence...
+          Loading dashboard...
         </motion.p>
       </motion.div>
     );
