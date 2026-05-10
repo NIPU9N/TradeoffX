@@ -7,7 +7,7 @@ import {
   Minus, Brain, BarChart2, Calendar, DollarSign, Target, Shield,
   Loader2, AlertCircle, CheckCircle2, Clock, XCircle
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getDecisionQualityScore } from "@/lib/utils";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import type { Decision, Outcome } from "@/types";
@@ -123,12 +123,13 @@ export default function DecisionDetail() {
       </div>
 
       {/* ── Stats Row ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         {[
           { icon: DollarSign, label: "Invested", value: `₹${decision.investment_amount.toLocaleString("en-IN")}`, color: "text-white" },
           { icon: Target, label: "Target", value: decision.target_price ? `₹${decision.target_price}` : "—", color: "text-tx-primary" },
           { icon: Shield, label: "Stop Loss", value: decision.stop_loss ? `₹${decision.stop_loss}` : "—", color: "text-tx-danger" },
           { icon: BarChart2, label: "Risk/Reward", value: decision.risk_reward_ratio ? `${decision.risk_reward_ratio}x` : "—", color: "text-tx-secondary" },
+          { icon: Activity, label: "Quality Score", value: `${getDecisionQualityScore(decision)}/100`, color: "text-tx-accent" },
         ].map((stat) => (
           <div key={stat.label} className="glass-card p-5">
             <div className="flex items-center gap-2 mb-2">
@@ -277,12 +278,6 @@ export default function DecisionDetail() {
                   {outcome.outcome_type.replace("_", " ")}
                 </span>
               </div>
-              {outcome.overall_quality_score && (
-                <div className="text-center py-4 border-t border-tx-border/30">
-                  <p className="text-xs text-tx-text-muted mb-1">Decision Quality Score</p>
-                  <p className="font-syne text-3xl font-black text-tx-secondary">{outcome.overall_quality_score}<span className="text-lg text-tx-text-muted">/10</span></p>
-                </div>
-              )}
               {outcome.learnings && (
                 <div className="mt-4 pt-4 border-t border-tx-border/30">
                   <p className="text-xs text-tx-text-muted mb-2 flex items-center gap-1"><Brain className="w-3 h-3" /> What I Learned</p>

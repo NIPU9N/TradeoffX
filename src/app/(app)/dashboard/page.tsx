@@ -6,6 +6,7 @@ import { ArrowUpRight, ArrowRight, Loader2, RefreshCw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useMode } from "@/context/ModeContext";
 import { KNOWN_ASSETS } from "@/lib/assets";
+import { getDecisionQualityScore } from "@/lib/utils";
 
 interface Outcome {
   id: string;
@@ -279,26 +280,14 @@ export default function Dashboard() {
         const biggestBias = biggestBiasEntry ? String(biggestBiasEntry[0]).toUpperCase() : 'NONE';
         const biasCount = biggestBiasEntry ? biggestBiasEntry[1] : 0;
 
-        // --- QUALITY SCORE for chart ---
-        const validScores = closedDecisions.map(d => {
-          const outArr = Array.isArray(d.outcome) ? d.outcome : [d.outcome];
-          return outArr[0].overall_quality_score || outArr[0].quality_score || 0;
-        }).filter(s => s > 0);
-
-        // --- CHART DATA ---
-        const chartData = closedDecisions
-          .filter(d => { const o = Array.isArray(d.outcome) ? d.outcome[0] : d.outcome as any; return o?.reviewed_at; })
-          .sort((a, b) => {
-            const oA = (Array.isArray(a.outcome) ? a.outcome[0] : a.outcome) as any;
-            const oB = (Array.isArray(b.outcome) ? b.outcome[0] : b.outcome) as any;
-            return new Date(oA.reviewed_at).getTime() - new Date(oB.reviewed_at).getTime();
-          })
+        // --- CHART DATA (Decision Quality out of 100) ---
+        const chartData = decisions
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
           .slice(-30)
           .map(d => {
-            const out = (Array.isArray(d.outcome) ? d.outcome[0] : d.outcome) as any;
             return {
-              date: new Date(out.reviewed_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-              score: out.overall_quality_score || out.quality_score || 0,
+              date: new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+              score: getDecisionQualityScore(d),
               name: d.asset_name || "Unknown"
             };
           });
@@ -334,7 +323,7 @@ export default function Dashboard() {
           ],
           openPositions,
           pendingReviews,
-          reviewedCount: validScores.length
+          reviewedCount: closedDecisions.length
         });
 
         // Kick off live price fetch after state is set
