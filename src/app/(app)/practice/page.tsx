@@ -283,14 +283,26 @@ export default function PracticePortfolioPage() {
           { label: "CURRENT VALUE", value: `₹${Number(portfolio?.current_value || 0).toLocaleString()}`, icon: <Gamepad2 className="w-4 h-4 text-[#10B981]" /> },
           { label: "TOTAL RETURN", value: `${Number(portfolio?.total_return_amount || 0) >= 0 ? "+" : "-"}₹${Math.abs(Number(portfolio?.total_return_amount || 0)).toLocaleString()}`, icon: Number(portfolio?.total_return_amount || 0) >= 0 ? <TrendingUp className="w-4 h-4 text-[#10B981]" /> : <TrendingDown className="w-4 h-4 text-[#ef4444]" />, positive: Number(portfolio?.total_return_amount || 0) >= 0 },
           { label: "OPEN P&L (LIVE)", value: `${computedOpenPnL >= 0 ? "+" : "-"}₹${Math.abs(computedOpenPnL).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, icon: computedOpenPnL >= 0 ? <TrendingUp className="w-4 h-4 text-[#10B981]" /> : <TrendingDown className="w-4 h-4 text-[#ef4444]" />, positive: computedOpenPnL >= 0 },
-        ].map((s) => (
-          <div key={s.label} className="bg-[#111] border border-[#222] rounded-[8px] p-4 shadow-sm">
-            <div className="flex justify-between items-center mb-3">
+        ].map((s, index) => (
+          <motion.div
+            key={s.label}
+            className="relative overflow-hidden group bg-[#111] border border-[#222] rounded-[8px] p-4 shadow-sm"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 + index * 0.05, duration: 0.35 }}
+            whileHover={{ y: -4, scale: 1.01 }}
+          >
+            <motion.span
+              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0"
+              animate={{ opacity: [0, 0.18, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <div className="relative flex justify-between items-center mb-3">
               <span className="text-[10px] text-[#5a5a5a] uppercase tracking-widest">{s.label}</span>
               {s.icon}
             </div>
             <div className={cn("font-mono text-xl font-bold", (s as any).positive === false ? "text-[#ef4444]" : "text-[#f0f0f0]")}>{s.value}</div>
-          </div>
+          </motion.div>
         ))}
       </motion.div>
 
@@ -301,14 +313,26 @@ export default function PracticePortfolioPage() {
             { label: "FREE CAPITAL", value: `₹${Number(metrics.free_capital).toLocaleString()}`, icon: <RefreshCw className="w-4 h-4 text-[#10B981]" /> },
             { label: "OPEN POSITIONS", value: `${metrics.open_positions}`, icon: <Gamepad2 className="w-4 h-4 text-[#10B981]" /> },
             { label: "UNREALIZED P&L", value: `${computedOpenPnL >= 0 ? "+" : "-"}₹${Math.abs(computedOpenPnL).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, icon: computedOpenPnL >= 0 ? <TrendingUp className="w-4 h-4 text-[#10B981]" /> : <TrendingDown className="w-4 h-4 text-[#ef4444]" />, positive: computedOpenPnL >= 0 },
-          ].map((s) => (
-            <div key={s.label} className="bg-[#111] border border-[#222] rounded-[8px] p-4 shadow-sm">
-              <div className="flex justify-between items-center mb-3">
+          ].map((s, index) => (
+            <motion.div
+              key={s.label}
+              className="relative overflow-hidden group bg-[#111] border border-[#222] rounded-[8px] p-4 shadow-sm"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + index * 0.05, duration: 0.35 }}
+              whileHover={{ y: -4, scale: 1.01 }}
+            >
+              <motion.span
+                className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0"
+                animate={{ opacity: [0, 0.18, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <div className="relative flex justify-between items-center mb-3">
                 <span className="text-[10px] text-[#5a5a5a] uppercase tracking-widest">{s.label}</span>
                 {s.icon}
               </div>
               <div className={cn("font-mono text-xl font-bold", (s as any).positive === false ? "text-[#ef4444]" : "text-[#f0f0f0]")}>{s.value}</div>
-            </div>
+            </motion.div>
           ))}
         </motion.div>
       )}
@@ -316,7 +340,7 @@ export default function PracticePortfolioPage() {
       {/* Main Grid */}
       <motion.div className="grid grid-cols-1 lg:grid-cols-12 gap-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }}>
         {/* Price Lookup */}
-        <div className="lg:col-span-7 bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm">
+        <motion.div className="lg:col-span-7 bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} whileHover={{ y: -2, scale: 1.002 }}>
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="text-[10px] text-[#5a5a5a] uppercase tracking-widest mb-1">Stock Price Fetcher</p>
@@ -333,16 +357,24 @@ export default function PracticePortfolioPage() {
           {priceLookupError && <p className="mt-3 text-xs text-[#ef4444]">{priceLookupError}</p>}
           {stockSuggestions.length > 0 && (
             <div className="mt-3 grid grid-cols-2 gap-2">
-              {stockSuggestions.map((asset) => (
-                <button key={asset.symbol} onClick={() => handleLookupStockPrice(asset.name)} className="text-left bg-[#161616] border border-[#222] rounded-[6px] px-3 py-2 hover:border-[#10B981]/40 transition-colors">
+              {stockSuggestions.map((asset, index) => (
+                <motion.button
+                  key={asset.symbol}
+                  onClick={() => handleLookupStockPrice(asset.name)}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, delay: 0.05 + index * 0.03 }}
+                  whileHover={{ scale: 1.01 }}
+                  className="text-left bg-[#161616] border border-[#222] rounded-[6px] px-3 py-2 hover:border-[#10B981]/40 transition-colors"
+                >
                   <div className="text-sm font-medium text-[#f0f0f0]">{asset.name}</div>
                   <div className="text-[10px] text-[#5a5a5a] uppercase tracking-widest">{asset.symbol}</div>
-                </button>
+                </motion.button>
               ))}
             </div>
           )}
           {priceLookupResult && (
-            <div className="mt-5 bg-[#161616] border border-[#222] rounded-[8px] p-4">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} whileHover={{ scale: 1.002 }} className="mt-5 bg-[#161616] border border-[#222] rounded-[8px] p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] text-[#5a5a5a] uppercase tracking-widest mb-1">{priceLookupSymbol}</p>
@@ -355,12 +387,12 @@ export default function PracticePortfolioPage() {
                 )}
               </div>
               {priceLookupResult.last_updated && <p className="text-[10px] text-[#5a5a5a] mt-2">Updated {new Date(priceLookupResult.last_updated).toLocaleTimeString("en-IN")}</p>}
-            </div>
+            </motion.div>
           )}
-        </div>
+        </motion.div>
 
         {/* Live Feed */}
-        <div className="lg:col-span-5 bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm">
+        <motion.div className="lg:col-span-5 bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} whileHover={{ y: -1, scale: 1.001 }}>
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="text-[10px] text-[#5a5a5a] uppercase tracking-widest mb-1">Live Price Refresh</p>
@@ -373,11 +405,18 @@ export default function PracticePortfolioPage() {
           <p className="text-[10px] text-[#5a5a5a] mb-4">{lastPriceRefresh ? `Last refreshed at ${lastPriceRefresh}` : "Fetching prices..."}</p>
           <div className="space-y-2">
             {openAssetNames.length === 0 ? (
-              <p className="text-sm text-[#5a5a5a] py-6 text-center">Open a practice trade to see live prices here.</p>
-            ) : openAssetNames.map((assetName) => {
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-[#5a5a5a] py-6 text-center">Open a practice trade to see live prices here.</motion.p>
+            ) : openAssetNames.map((assetName, index) => {
               const price = livePrices[assetName];
               return (
-                <div key={assetName} className="flex items-center justify-between bg-[#161616] border border-[#222] rounded-[6px] px-4 py-3 hover:border-[#333] transition-colors">
+                <motion.div
+                  key={assetName}
+                  initial={{ opacity: 0, x: 8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.35, delay: index * 0.04 }}
+                  whileHover={{ y: -2, scale: 1.005 }}
+                  className="flex items-center justify-between bg-[#161616] border border-[#222] rounded-[6px] px-4 py-3 hover:border-[#333] transition-colors"
+                >
                   <div>
                     <p className="text-sm font-medium text-[#f0f0f0]">{assetName}</p>
                     <p className="text-[10px] text-[#5a5a5a]">Live stock price</p>
@@ -390,11 +429,11 @@ export default function PracticePortfolioPage() {
                       </p>
                     )}
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
-        </div>
+        </motion.div>
       </motion.div>
 
       {/* Open Positions */}
@@ -411,7 +450,14 @@ export default function PracticePortfolioPage() {
               const pnl = mark * Number(position.quantity) - Number(position.investment_amount);
               const pnlPct = Number(position.investment_amount) > 0 ? (pnl / Number(position.investment_amount)) * 100 : 0;
               return (
-                <motion.div key={position.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center justify-between bg-[#161616] border border-[#222] rounded-[6px] px-4 py-4 hover:border-[#333] transition-colors gap-4">
+                <motion.div
+                  key={position.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.35 }}
+                  whileHover={{ y: -3, scale: 1.01 }}
+                  className="flex items-center justify-between bg-[#161616] border border-[#222] rounded-[6px] px-4 py-4 hover:border-[#333] transition-colors gap-4"
+                >
                   <div className="flex-1 min-w-0">
                     <p className="font-syne font-bold text-[#f0f0f0] text-sm">{position.asset_name}</p>
                     <p className="text-[10px] text-[#5a5a5a] uppercase tracking-widest mt-0.5">{position.asset_type.replace("_", " ")} • QTY {position.quantity}</p>
@@ -445,8 +491,15 @@ export default function PracticePortfolioPage() {
           <p className="text-[#5a5a5a] text-sm py-8 text-center">No closed practice trades yet. Close a position to see how your thesis played out.</p>
         ) : (
           <div className="space-y-2">
-            {positions.filter((p) => p.status === "closed").map((position) => (
-              <div key={position.id} className="flex items-center justify-between bg-[#161616] border border-[#222] rounded-[6px] px-4 py-3 hover:border-[#333] transition-colors">
+            {positions.filter((p) => p.status === "closed").map((position, index) => (
+              <motion.div
+                key={position.id}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.35, delay: 0.05 + index * 0.05 }}
+                whileHover={{ y: -2, scale: 1.005 }}
+                className="flex items-center justify-between bg-[#161616] border border-[#222] rounded-[6px] px-4 py-3 hover:border-[#333] transition-colors"
+              >
                 <div>
                   <p className="text-sm font-medium text-[#f0f0f0]">{position.asset_name}</p>
                   <p className="text-[10px] text-[#5a5a5a] mt-0.5">Closed {position.closed_at ? new Date(position.closed_at).toLocaleDateString("en-IN") : "-"} • Exit ₹{Number(position.exit_price || 0).toFixed(2)}</p>
@@ -455,7 +508,7 @@ export default function PracticePortfolioPage() {
                   <p className={cn("font-mono font-bold text-sm", Number(position.return_amount) >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>{Number(position.return_amount) >= 0 ? "+" : "-"}₹{Math.abs(Number(position.return_amount)).toFixed(2)}</p>
                   <p className={cn("text-[11px] font-mono", Number(position.return_percent) >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>{Number(position.return_percent) >= 0 ? "+" : ""}{Number(position.return_percent).toFixed(2)}%</p>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
