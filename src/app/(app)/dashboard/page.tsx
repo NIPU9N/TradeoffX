@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { ArrowUpRight, ArrowRight, Loader2, RefreshCw } from "lucide-react";
+import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { useMode } from "@/context/ModeContext";
 import { KNOWN_ASSETS } from "@/lib/assets";
@@ -409,10 +410,27 @@ export default function Dashboard() {
 
   if (loading || !data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="w-8 h-8 text-tx-accent animate-spin" />
-        <p className="text-sm text-tx-text-secondary font-mono">Fetching intelligence...</p>
-      </div>
+      <motion.div 
+        className="flex flex-col items-center justify-center min-h-[60vh] gap-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <Loader2 className="w-8 h-8 text-tx-accent" />
+        </motion.div>
+        <motion.p 
+          className="text-sm text-tx-text-secondary font-mono"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          Fetching intelligence...
+        </motion.p>
+      </motion.div>
     );
   }
 
@@ -453,26 +471,52 @@ export default function Dashboard() {
   const isPractice = mode === "practice";
 
   return (
-    <div className="space-y-6 pb-24 text-[#f0f0f0] font-sans antialiased">
+    <motion.div 
+      className="space-y-6 pb-24 text-[#f0f0f0] font-sans antialiased"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
+    >
       
       {/* HEADER SECTION (To distinguish mode) */}
-      <div className="flex justify-between items-end mb-6 border-b border-[#222] pb-4">
+      <motion.div 
+        className="flex justify-between items-end mb-6 border-b border-[#222] pb-4"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.5 }}
+      >
         <div>
           <h1 className="text-2xl font-bold text-[#f0f0f0] mb-1">Dashboard</h1>
           <p className="text-sm text-[#5a5a5a]">
             {isPractice ? "Practice Environment" : "Real Portfolio"} Overview
           </p>
         </div>
-      </div>
+      </motion.div>
 
       {/* SECTION 1 — TOP ROW */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+      <motion.div 
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+      >
         
         {/* Card 1 — Total Capital Invested */}
-        <div className="lg:col-span-3 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col justify-between shadow-sm">
+        <motion.div 
+          className="lg:col-span-3 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col justify-between shadow-sm hover:shadow-lg transition-shadow duration-300"
+          whileHover={{ scale: 1.02, y: -2 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
           <div>
             <h3 className="text-[#5a5a5a] text-sm font-medium mb-1">Capital Invested</h3>
-            <h2 className="text-3xl font-mono tracking-tight text-[#f0f0f0]">₹{data.totalCapitalInvested.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</h2>
+            <motion.h2 
+              className="text-3xl font-mono tracking-tight text-[#f0f0f0]"
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.4, duration: 0.3 }}
+            >
+              ₹{data.totalCapitalInvested.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+            </motion.h2>
             <p className="text-[10px] text-[#5a5a5a] mt-1">{data.openPositions.length} open position{data.openPositions.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="mt-4">
@@ -484,14 +528,25 @@ export default function Dashboard() {
               )}
             </span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 2 — Decisions Logged */}
-        <div className="lg:col-span-2 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col justify-between shadow-sm">
+        <motion.div 
+          className="lg:col-span-2 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col justify-between shadow-sm hover:shadow-lg transition-shadow duration-300"
+          whileHover={{ scale: 1.02, y: -2 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
           <div>
             <h3 className="text-[#5a5a5a] text-sm font-medium mb-1">Decisions Logged</h3>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-mono tracking-tight">{data.decisionCountTotal}</span>
+              <motion.span 
+                className="text-3xl font-mono tracking-tight"
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.5, duration: 0.3 }}
+              >
+                {data.decisionCountTotal}
+              </motion.span>
               <span className="text-[#5a5a5a] text-xs">{data.decisionCountMonth} this month</span>
             </div>
           </div>
@@ -501,18 +556,27 @@ export default function Dashboard() {
               {data.streak}-day streak
             </span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 3 — Unrealized P&L (practice) / Total Profit (real) */}
-        <div className="lg:col-span-2 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col justify-between shadow-sm">
+        <motion.div 
+          className="lg:col-span-2 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col justify-between shadow-sm hover:shadow-lg transition-shadow duration-300"
+          whileHover={{ scale: 1.02, y: -2 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
           <div>
             <h3 className="text-[#5a5a5a] text-sm font-medium mb-1">
               {isPractice ? 'Unrealized P&L' : 'Total Profit Made'}
             </h3>
             <div className="flex items-baseline gap-2">
-              <span className={`text-3xl font-mono tracking-tight ${(isPractice ? (derivedData?.unrealizedPnL ?? data.unrealizedPnL) : data.totalRealizedPnL) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+              <motion.span 
+                className={`text-3xl font-mono tracking-tight ${(isPractice ? (derivedData?.unrealizedPnL ?? data.unrealizedPnL) : data.totalRealizedPnL) >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.6, duration: 0.3 }}
+              >
                 {(isPractice ? (derivedData?.unrealizedPnL ?? data.unrealizedPnL) : data.totalRealizedPnL) >= 0 ? '+' : ''}₹{Math.abs(isPractice ? (derivedData?.unrealizedPnL ?? data.unrealizedPnL) : data.totalRealizedPnL).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
-              </span>
+              </motion.span>
             </div>
           </div>
           <div className="mt-4 text-xs">
@@ -521,18 +585,29 @@ export default function Dashboard() {
             </span>
             <span className="text-[#5a5a5a] ml-1">{isPractice ? 'on open positions' : 'across closed trades'}</span>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 4 — My Recent Decisions */}
-        <div className="lg:col-span-5 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col shadow-sm overflow-hidden">
+        <motion.div 
+          className="lg:col-span-5 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300"
+          whileHover={{ scale: 1.01, y: -1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-[#5a5a5a] text-sm font-medium">My Recent Decisions</h3>
             <Link href="/decisions" className="text-xs text-[#f0f0f0] hover:text-[#22c55e] transition-colors">See all</Link>
           </div>
           <div className="flex-1 overflow-x-auto no-scrollbar">
             <div className="flex gap-3 min-w-max pb-2">
-              {data.recentDecisions.map(d => (
-                <div key={d.id} className="w-64 bg-[#161616] border border-[#222] rounded-[6px] p-3 flex flex-col gap-2 shrink-0 hover:border-[#333] transition-colors cursor-pointer">
+              {data.recentDecisions.map((d, index) => (
+                <motion.div 
+                  key={d.id} 
+                  className="w-64 bg-[#161616] border border-[#222] rounded-[6px] p-3 flex flex-col gap-2 shrink-0 hover:border-[#333] transition-colors cursor-pointer"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.7 + index * 0.1, duration: 0.4 }}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                >
                   <div className="flex justify-between items-start">
                     <span className="font-mono text-sm font-bold text-[#f0f0f0]">{d.asset_name}</span>
                     <span className="px-2 py-0.5 rounded-full bg-[#111] border border-[#222] text-[10px] text-[#f0f0f0] uppercase">
@@ -547,7 +622,7 @@ export default function Dashboard() {
                       {d.status === 'pending_review' ? 'Pending Review' : d.status === 'reviewed' ? 'Reviewed' : 'Open'}
                     </span>
                   </div>
-                </div>
+                </motion.div>
               ))}
               {data.recentDecisions.length === 0 && (
                 <div className="flex items-center justify-center w-full h-full text-xs text-[#5a5a5a]">
@@ -556,12 +631,17 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-        </div>
+        </motion.div>
         
-      </div>
+      </motion.div>
 
       {/* SECTION 2 — MAIN CHART + PATTERNS PANEL */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <motion.div 
+        className="grid grid-cols-1 lg:grid-cols-12 gap-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8, duration: 0.5 }}
+      >
         
         {/* Left 70% — Decision Performance Chart */}
         <div className="lg:col-span-8 bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm">
@@ -569,13 +649,15 @@ export default function Dashboard() {
             <h3 className="text-[#f0f0f0] text-sm font-medium">Decision Quality Over Time</h3>
             <div className="flex bg-[#161616] border border-[#222] rounded-full p-0.5">
               {['1W', '1M', '3M', '6M', '1Y'].map(t => (
-                <button 
+                <motion.button 
                   key={t} 
                   onClick={() => setChartTimeframe(t)}
                   className={`text-[10px] font-medium px-2.5 py-1 rounded-full transition-colors ${chartTimeframe === t ? 'bg-[#222] text-[#f0f0f0]' : 'text-[#5a5a5a] hover:text-[#f0f0f0]'}`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   {t}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -599,29 +681,54 @@ export default function Dashboard() {
               <line x1="0" y1="75" x2="100" y2="75" stroke="#222" strokeWidth="0.5" />
               <line x1="0" y1="100" x2="100" y2="100" stroke="#222" strokeWidth="0.5" />
               
-              <polygon points={`${chartPoints} 100,100 0,100`} fill="url(#chartFill)" />
-              <polyline points={chartPoints} fill="none" stroke={isPractice ? "#10B981" : "#22c55e"} strokeWidth="1.5" />
+              <motion.polygon 
+                points={`${chartPoints} 100,100 0,100`} 
+                fill="url(#chartFill)" 
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ delay: 1.2, duration: 1.5, ease: "easeInOut" }}
+              />
+              <motion.polyline 
+                points={chartPoints} 
+                fill="none" 
+                stroke={isPractice ? "#10B981" : "#22c55e"} 
+                strokeWidth="1.5"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ delay: 1.2, duration: 1.5, ease: "easeInOut" }}
+              />
             </svg>
             
             {/* Tooltip Hover State */}
             {hoveredChartPoint && (
               <>
-                <div 
+                <motion.div 
                   className="absolute top-0 bottom-0 w-px border-l border-dashed border-[#5a5a5a] pointer-events-none"
                   style={{ left: `${hoveredChartPoint.x}%` }}
+                  initial={{ scaleY: 0 }}
+                  animate={{ scaleY: 1 }}
+                  transition={{ duration: 0.3 }}
                 />
-                <div 
-                  className={`absolute w-2 h-2 rounded-full border-2 border-[#111] pointer-events-none -translate-x-1/2 -translate-y-1/2 ${isPractice ? 'bg-[#10B981]' : 'bg-[#22c55e]'}`}
+                <motion.div 
+                  className="absolute w-2 h-2 rounded-full border-2 border-[#111] pointer-events-none -translate-x-1/2 -translate-y-1/2"
                   style={{ left: `${hoveredChartPoint.x}%`, top: `${100 - hoveredChartPoint.score}%` }}
-                />
-                <div 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className={`w-full h-full rounded-full ${isPractice ? 'bg-[#10B981]' : 'bg-[#22c55e]'}`} />
+                </motion.div>
+                <motion.div 
                   className={`absolute z-10 bg-[#161616] border border-[#222] rounded-[6px] p-3 pointer-events-none shadow-xl min-w-[140px] ${hoveredChartPoint.x > 50 ? '-translate-x-[110%]' : 'translate-x-[10%]'}`}
                   style={{ left: `${hoveredChartPoint.x}%`, top: '10%' }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2 }}
                 >
                   <p className="text-[10px] text-[#5a5a5a] mb-1 font-mono">{hoveredChartPoint.date}</p>
                   <p className="text-xs font-medium text-[#f0f0f0] truncate">{hoveredChartPoint.name}</p>
                   <p className={`font-mono text-sm mt-1 ${isPractice ? 'text-[#10B981]' : 'text-[#22c55e]'}`}>Score: {hoveredChartPoint.score}</p>
-                </div>
+                </motion.div>
               </>
             )}
           </div>
@@ -638,13 +745,20 @@ export default function Dashboard() {
         <div className="lg:col-span-4 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col h-full shadow-sm">
           <h3 className="text-[#f0f0f0] text-sm font-medium mb-5">Your Patterns</h3>
           <div className="flex-1 flex flex-col gap-3">
-            {data.patterns.map((p) => (
-              <div key={p.id} className="bg-[#161616] border border-[#222] rounded-[6px] p-3 hover:border-[#333] transition-colors">
+            {data.patterns.map((p, index) => (
+              <motion.div 
+                key={p.id} 
+                className="bg-[#161616] border border-[#222] rounded-[6px] p-3 hover:border-[#333] transition-colors"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.0 + index * 0.1, duration: 0.4 }}
+                whileHover={{ scale: 1.02, x: 5 }}
+              >
                 <p className="text-sm font-medium text-[#f0f0f0] mb-1">{p.pattern_text}</p>
                 <div className="flex justify-between items-center text-xs mt-2">
                   <span className="text-[#5a5a5a]">{p.based_on_decisions} instances detected</span>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
           <div className="mt-6 space-y-3">
@@ -655,11 +769,16 @@ export default function Dashboard() {
               Full analysis <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* SECTION 3 — BOTTOM ROW */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <motion.div 
+        className="grid grid-cols-1 lg:grid-cols-12 gap-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.4, duration: 0.5 }}
+      >
         
         {/* Left — Portfolio Overview Table */}
         <div className="lg:col-span-8 bg-[#111] border border-[#222] rounded-[8px] p-5 overflow-x-auto shadow-sm">
@@ -676,13 +795,15 @@ export default function Dashboard() {
               </button>
               <div className="flex gap-2">
                 {['All', 'Stocks', 'MF', 'Crypto'].map(f => (
-                  <button
+                  <motion.button
                     key={f}
                     onClick={() => setOpenPositionsFilter(f)}
                     className={`px-3 py-1 text-[10px] font-medium rounded-full border transition-colors ${openPositionsFilter === f ? 'bg-[#161616] border-[#333] text-[#f0f0f0]' : 'border-transparent text-[#5a5a5a] hover:text-[#f0f0f0]'}`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
                     {f}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             </div>
@@ -701,13 +822,20 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {filteredPositions.map((p) => {
+              {filteredPositions.map((p, index) => {
                 const lp = livePrices[p.asset_name];
                 const livePrice = lp?.current_price ?? null;
                 const changePct = lp?.change_percent ?? null;
                 
                 return (
-                  <tr key={p.id} className="border-b border-[#222] last:border-b-0 hover:bg-white/5 transition-colors group">
+                  <motion.tr 
+                    key={p.id} 
+                    className="border-b border-[#222] last:border-b-0 hover:bg-white/5 transition-colors group"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 1.6 + index * 0.05, duration: 0.3 }}
+                    whileHover={{ scale: 1.01, backgroundColor: 'rgba(255,255,255,0.05)' }}
+                  >
                     <td className="py-3 font-mono font-medium text-[#f0f0f0] group-hover:text-[#22c55e] transition-colors">
                       <Link href={`/decisions/${p.id}`}>{p.asset_name}</Link>
                     </td>
@@ -754,23 +882,49 @@ export default function Dashboard() {
         <div className="lg:col-span-4 flex flex-col gap-4">
 
           {/* Biggest Bias Card */}
-          <div className="bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm">
+          <motion.div 
+            className="bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm hover:shadow-lg transition-shadow duration-300"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 1.8, duration: 0.4 }}
+            whileHover={{ scale: 1.02, y: -2 }}
+          >
             <h3 className="text-[#5a5a5a] text-sm font-medium mb-3">Biggest Bias</h3>
             <div className="flex items-end justify-between">
-              <span className="text-2xl font-mono font-bold text-[#f0f0f0]">{data.biggestBias}</span>
+              <motion.span 
+                className="text-2xl font-mono font-bold text-[#f0f0f0]"
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 2.0, duration: 0.3 }}
+              >
+                {data.biggestBias}
+              </motion.span>
               <span className="font-mono text-xs text-[#5a5a5a]">{data.biasCount} occurrence{data.biasCount !== 1 ? 's' : ''}</span>
             </div>
             <p className="text-[10px] text-[#5a5a5a] mt-2">Most frequent emotional trigger across your decisions.</p>
-          </div>
+          </motion.div>
 
           {/* Awaiting Review */}
-          <div className="bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col flex-1 shadow-sm min-h-0">
+          <motion.div 
+            className="bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col flex-1 shadow-sm min-h-0 hover:shadow-lg transition-shadow duration-300"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 1.9, duration: 0.4 }}
+            whileHover={{ scale: 1.01, y: -1 }}
+          >
             <h3 className="text-[#f0f0f0] text-sm font-medium mb-4">Awaiting Review</h3>
             <div className="flex flex-col gap-0 divide-y divide-[#222] overflow-y-auto max-h-[240px]">
-              {data.pendingReviews.map(r => {
+              {data.pendingReviews.map((r, index) => {
                 const daysSince = Math.floor((new Date().getTime() - new Date(r.created_at).getTime()) / (1000 * 3600 * 24));
                 return (
-                  <div key={r.id} className="py-3 flex items-center justify-between group">
+                  <motion.div 
+                    key={r.id} 
+                    className="py-3 flex items-center justify-between group"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 2.1 + index * 0.1, duration: 0.3 }}
+                    whileHover={{ x: 5 }}
+                  >
                     <div>
                       <p className="font-mono text-sm text-[#f0f0f0]">{r.asset_name}</p>
                       <p className={`text-[10px] mt-0.5 font-medium ${daysSince > 7 ? 'text-[#ef4444]' : 'text-amber-500'}`}>
@@ -780,7 +934,7 @@ export default function Dashboard() {
                     <Link href={`/review/${r.id}`} className="text-xs font-medium text-[#f0f0f0] border border-[#222] rounded px-3 py-1 hover:bg-[#222] transition-colors">
                       Review now
                     </Link>
-                  </div>
+                  </motion.div>
                 );
               })}
               {data.pendingReviews.length === 0 && (
@@ -793,8 +947,8 @@ export default function Dashboard() {
 
         </div>
 
-      </div>
+      </motion.div>
 
-    </div>
+    </motion.div>
   );
 }
