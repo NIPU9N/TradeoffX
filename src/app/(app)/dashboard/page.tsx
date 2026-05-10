@@ -54,7 +54,7 @@ export default function Dashboard() {
     biggestBias: string;
     biasCount: number;
     recentDecisions: any[];
-    chartData: { date: string; score: number; name: string }[];
+    chartData: { date: string; score: number; name: string; timestamp?: number }[];
     patterns: Pattern[];
     openPositions: { 
       id: string; 
@@ -288,7 +288,8 @@ export default function Dashboard() {
             return {
               date: new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
               score: getDecisionQualityScore(d),
-              name: d.asset_name || "Unknown"
+              name: d.asset_name || "Unknown",
+              timestamp: new Date(d.created_at).getTime()
             };
           });
 
@@ -414,16 +415,32 @@ export default function Dashboard() {
     });
   };
 
+  const filteredChartData = useMemo(() => {
+    if (!data?.chartData) return [];
+    if (data.chartData.length === 0 || data.chartData[0].name === "No Data Yet") return data.chartData;
+    
+    const now = new Date().getTime();
+    let cutoff = 0;
+    if (chartTimeframe === '1W') cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    else if (chartTimeframe === '1M') cutoff = now - 30 * 24 * 60 * 60 * 1000;
+    else if (chartTimeframe === '3M') cutoff = now - 90 * 24 * 60 * 60 * 1000;
+    else if (chartTimeframe === '6M') cutoff = now - 180 * 24 * 60 * 60 * 1000;
+    else if (chartTimeframe === '1Y') cutoff = now - 365 * 24 * 60 * 60 * 1000;
+    
+    const filtered = data.chartData.filter(d => (d.timestamp || 0) >= cutoff);
+    return filtered.length > 0 ? filtered : data.chartData.slice(-1);
+  }, [data?.chartData, chartTimeframe]);
+
   const chartMax = 100;
   const chartMin = 0;
-  const chartPoints = data.chartData.map((d, i) => {
-    const x = (i / (data.chartData.length - 1)) * 100;
+  const chartPoints = filteredChartData.map((d, i) => {
+    const x = filteredChartData.length > 1 ? (i / (filteredChartData.length - 1)) * 100 : 50;
     const y = 100 - ((d.score - chartMin) / (chartMax - chartMin)) * 100;
     return `${x},${y}`;
   }).join(' ');
 
-  const bestDecision = Math.max(...data.chartData.map(d => d.score));
-  const worstDecision = Math.min(...data.chartData.map(d => d.score));
+  const bestDecision = filteredChartData.length > 0 ? Math.max(...filteredChartData.map(d => d.score)) : 0;
+  const worstDecision = filteredChartData.length > 0 ? Math.min(...filteredChartData.map(d => d.score)) : 0;
 
   const filteredPositions = (derivedData?.enrichedPositions || data.openPositions).filter(p => {
     if (openPositionsFilter === "All") return true;
@@ -626,9 +643,6 @@ export default function Dashboard() {
                 <p className="text-sm font-medium text-[#f0f0f0] mb-1">{p.pattern_text}</p>
                 <div className="flex justify-between items-center text-xs mt-2">
                   <span className="text-[#5a5a5a]">{p.based_on_decisions} instances detected</span>
-                  {p.pattern_type === 'info' ? null : (
-                    <span className="font-mono text-[#ef4444]">-{Math.floor(Math.random() * 10) + 1}% avg</span>
-                  )}
                 </div>
               </div>
             ))}
