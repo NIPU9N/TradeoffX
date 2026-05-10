@@ -391,6 +391,22 @@ export default function Dashboard() {
     };
   }, [data, livePrices]);
 
+  const filteredChartData = useMemo(() => {
+    if (!data?.chartData) return [];
+    if (data.chartData.length === 0 || data.chartData[0].name === "No Data Yet") return data.chartData;
+    
+    const now = new Date().getTime();
+    let cutoff = 0;
+    if (chartTimeframe === '1W') cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    else if (chartTimeframe === '1M') cutoff = now - 30 * 24 * 60 * 60 * 1000;
+    else if (chartTimeframe === '3M') cutoff = now - 90 * 24 * 60 * 60 * 1000;
+    else if (chartTimeframe === '6M') cutoff = now - 180 * 24 * 60 * 60 * 1000;
+    else if (chartTimeframe === '1Y') cutoff = now - 365 * 24 * 60 * 60 * 1000;
+    
+    const filtered = data.chartData.filter(d => (d.timestamp || 0) >= cutoff);
+    return filtered.length > 0 ? filtered : data.chartData.slice(-1);
+  }, [data?.chartData, chartTimeframe]);
+
   if (loading || !data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -414,22 +430,6 @@ export default function Dashboard() {
       y
     });
   };
-
-  const filteredChartData = useMemo(() => {
-    if (!data?.chartData) return [];
-    if (data.chartData.length === 0 || data.chartData[0].name === "No Data Yet") return data.chartData;
-    
-    const now = new Date().getTime();
-    let cutoff = 0;
-    if (chartTimeframe === '1W') cutoff = now - 7 * 24 * 60 * 60 * 1000;
-    else if (chartTimeframe === '1M') cutoff = now - 30 * 24 * 60 * 60 * 1000;
-    else if (chartTimeframe === '3M') cutoff = now - 90 * 24 * 60 * 60 * 1000;
-    else if (chartTimeframe === '6M') cutoff = now - 180 * 24 * 60 * 60 * 1000;
-    else if (chartTimeframe === '1Y') cutoff = now - 365 * 24 * 60 * 60 * 1000;
-    
-    const filtered = data.chartData.filter(d => (d.timestamp || 0) >= cutoff);
-    return filtered.length > 0 ? filtered : data.chartData.slice(-1);
-  }, [data?.chartData, chartTimeframe]);
 
   const chartMax = 100;
   const chartMin = 0;
