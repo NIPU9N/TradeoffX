@@ -296,7 +296,7 @@ export default function Dashboard() {
         if (chartData.length === 0) {
           for (let i = 10; i >= 0; i--) {
             const dt = new Date(); dt.setDate(dt.getDate() - i);
-            chartData.push({ date: dt.toLocaleDateString("en-US", { month: "short", day: "numeric" }), score: Math.floor(50 + Math.random() * 40), name: "No Data Yet" });
+            chartData.push({ date: dt.toLocaleDateString("en-US", { month: "short", day: "numeric" }), score: Math.floor(50 + Math.random() * 40), name: "No Data Yet", timestamp: dt.getTime() });
           }
         }
 
