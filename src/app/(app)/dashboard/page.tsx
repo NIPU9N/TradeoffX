@@ -742,7 +742,11 @@ export default function Dashboard() {
         </div>
 
         {/* Right 30% — Behavioral Patterns */}
-        <div className="lg:col-span-4 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col h-full shadow-sm">
+        <motion.div 
+          className="lg:col-span-4 bg-[#111] border border-[#222] rounded-[8px] p-5 flex flex-col h-full shadow-sm hover:shadow-lg transition-shadow duration-300"
+          whileHover={{ scale: 1.005, y: -1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        >
           <h3 className="text-[#f0f0f0] text-sm font-medium mb-5">Your Patterns</h3>
           <div className="flex-1 flex flex-col gap-3">
             {data.patterns.map((p, index) => (
@@ -781,7 +785,13 @@ export default function Dashboard() {
       >
         
         {/* Left — Portfolio Overview Table */}
-        <div className="lg:col-span-8 bg-[#111] border border-[#222] rounded-[8px] p-5 overflow-x-auto shadow-sm">
+        <motion.div 
+          className="lg:col-span-8 bg-[#111] border border-[#222] rounded-[8px] p-5 overflow-x-auto shadow-sm hover:shadow-lg transition-shadow duration-300"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1.6, duration: 0.4 }}
+          whileHover={{ scale: 1.005, y: -1 }}
+        >
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-[#f0f0f0] text-sm font-medium">Open Positions</h3>
             <div className="flex items-center gap-3">
@@ -866,7 +876,7 @@ export default function Dashboard() {
                         {p.status === 'open' ? 'Open' : 'Pending'}
                       </div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 );
               })}
               {filteredPositions.length === 0 && (
@@ -876,10 +886,15 @@ export default function Dashboard() {
               )}
             </tbody>
           </table>
-        </div>
+        </motion.div>
 
         {/* Right side: stacked Pending Reviews + Biggest Bias */}
-        <div className="lg:col-span-4 flex flex-col gap-4">
+        <motion.div 
+          className="lg:col-span-4 flex flex-col gap-4"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1.7, duration: 0.4 }}
+        >
 
           {/* Biggest Bias Card */}
           <motion.div 
@@ -943,9 +958,9 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
 
-        </div>
+        </motion.div>
 
       </motion.div>
 
