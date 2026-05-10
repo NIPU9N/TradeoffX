@@ -769,7 +769,7 @@ export default function Dashboard() {
             <p className="text-[10px] text-[#5a5a5a] leading-relaxed">
               Based on {data.reviewedCount} reviewed decisions — update by reviewing {data.pendingReviews.length} pending decisions.
             </p>
-            <Link href="/patterns" className="inline-flex items-center gap-1 text-[11px] text-[#f0f0f0] hover:text-[#22c55e] transition-colors uppercase tracking-wider font-medium">
+            <Link href="/mirror" className="inline-flex items-center gap-1 text-[11px] text-[#f0f0f0] hover:text-[#22c55e] transition-colors uppercase tracking-wider font-medium">
               Full analysis <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
