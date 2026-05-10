@@ -18,13 +18,15 @@ import {
   DollarSign,
   BarChart3,
   Wallet,
-  Layers,
-  Eye
+  Eye,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { getProfile } from "@/lib/api";
 import type { Profile } from "@/types";
 import { useState, useEffect } from "react";
 import { useMode } from "@/context/ModeContext";
+import { useSidebar } from "@/context/SidebarContext";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -32,6 +34,7 @@ export function Sidebar() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const { mode, setMode, isPractice } = useMode();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const { collapsed, toggleCollapsed } = useSidebar();
 
   useEffect(() => {
     async function loadProfile() {
@@ -48,28 +51,27 @@ export function Sidebar() {
   const handleModeSwitch = (newMode: "real" | "practice") => {
     if (newMode === mode) return;
     setMode(newMode);
-    
     if (newMode === "practice") {
       setToastMessage("Practice Mode on. Zero risk. Full learning. 🎮");
     } else {
       setToastMessage("Real Money Mode. This counts. Think before you trade. 💰");
     }
-    
     setTimeout(() => setToastMessage(null), 4000);
-    // Refresh to apply new mode context immediately to server components if any
     router.refresh();
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const getInitials = (name: string) =>
+    name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
-  const navItems: { name: string; href: string; icon: React.ElementType; highlight?: boolean; pro?: boolean; watchlist?: boolean; badge?: string }[] = [
+  const navItems: {
+    name: string;
+    href: string;
+    icon: React.ElementType;
+    highlight?: boolean;
+    pro?: boolean;
+    watchlist?: boolean;
+    badge?: string;
+  }[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "New Decision", href: "/new", icon: PlusCircle, highlight: true },
     { name: "My Decisions", href: "/decisions", icon: BookOpen },
@@ -83,67 +85,121 @@ export function Sidebar() {
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
+  const sidebarWidth = collapsed ? 72 : 260;
+
   return (
     <>
-      <div className="fixed top-0 left-0 h-screen w-[260px] flex flex-col z-40" style={{ background: "#0A0A14", borderRight: "1px solid var(--color-tx-border)" }}>
-        {/* Logo Section */}
-        <div className="p-6 pb-4">
-          <Link href="/" className="flex items-center gap-3 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-tx-primary/10 flex items-center justify-center">
+      <motion.div
+        className="fixed top-0 left-0 h-screen flex flex-col z-40 overflow-hidden"
+        style={{ background: "#0A0A14", borderRight: "1px solid var(--color-tx-border)" }}
+        animate={{ width: sidebarWidth }}
+        transition={{ type: "spring", stiffness: 320, damping: 30 }}
+      >
+        {/* Logo + Toggle Row */}
+        <div className="p-4 pb-3 flex items-center justify-between flex-shrink-0">
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col overflow-hidden"
+              >
+                <Link href="/" className="flex items-center gap-3 mb-1">
+                  <div className="w-8 h-8 rounded-lg bg-tx-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Zap className="w-5 h-5 text-tx-primary" />
+                  </div>
+                  <span className="font-syne font-bold text-xl text-white whitespace-nowrap">TradeoffX</span>
+                </Link>
+                <p className="text-[10px] text-tx-text-muted uppercase tracking-widest pl-11 whitespace-nowrap">
+                  Decision Intelligence
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {collapsed && (
+            <div className="w-8 h-8 rounded-lg bg-tx-primary/10 flex items-center justify-center mx-auto">
               <Zap className="w-5 h-5 text-tx-primary" />
             </div>
-            <span className="font-syne font-bold text-xl text-white">TradeoffX</span>
-          </Link>
-          <p className="text-[10px] text-tx-text-muted uppercase tracking-widest pl-11">Decision Intelligence</p>
+          )}
         </div>
 
-        {/* Mode Toggle Section */}
-        <div className="px-4 pb-4">
-          <div className="flex bg-tx-card rounded-xl p-1 border border-tx-border relative overflow-hidden">
-            <div className="w-1/2 relative z-10">
-              <button
-                onClick={() => handleModeSwitch("practice")}
-                className={cn(
-                  "w-full py-2 flex items-center justify-center gap-2 text-xs font-bold font-syne rounded-lg transition-colors duration-300",
-                  isPractice ? "text-[#08080F]" : "text-tx-text-secondary hover:text-white"
-                )}
-              >
-                <Gamepad2 className="w-3.5 h-3.5" /> Practice
-              </button>
-            </div>
-            <div className="w-1/2 relative z-10">
-              <button
-                onClick={() => handleModeSwitch("real")}
-                className={cn(
-                  "w-full py-2 flex items-center justify-center gap-2 text-xs font-bold font-syne rounded-lg transition-colors duration-300",
-                  !isPractice ? "text-[#08080F]" : "text-tx-text-secondary hover:text-white"
-                )}
-              >
-                <DollarSign className="w-3.5 h-3.5" /> Real Money
-              </button>
-            </div>
-            {/* Animated Background Pill */}
-            <motion.div
-              layoutId="modeBackground"
-              className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-tx-primary rounded-lg z-0"
-              animate={{
-                left: isPractice ? "4px" : "calc(50% + 2px)",
-              }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            />
-          </div>
+        {/* Collapse Toggle Button */}
+        <div className={cn("px-3 mb-2 flex", collapsed ? "justify-center" : "justify-end")}>
+          <button
+            onClick={toggleCollapsed}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-tx-text-muted hover:text-white hover:bg-tx-glass transition-colors"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="w-4 h-4" />
+            ) : (
+              <PanelLeftClose className="w-4 h-4" />
+            )}
+          </button>
         </div>
+
+        {/* Mode Toggle */}
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.div
+              className="px-4 pb-4 flex-shrink-0"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              <div className="flex bg-tx-card rounded-xl p-1 border border-tx-border relative overflow-hidden">
+                <div className="w-1/2 relative z-10">
+                  <button
+                    onClick={() => handleModeSwitch("practice")}
+                    className={cn(
+                      "w-full py-2 flex items-center justify-center gap-2 text-xs font-bold font-syne rounded-lg transition-colors duration-300",
+                      isPractice ? "text-[#08080F]" : "text-tx-text-secondary hover:text-white"
+                    )}
+                  >
+                    <Gamepad2 className="w-3.5 h-3.5" /> Practice
+                  </button>
+                </div>
+                <div className="w-1/2 relative z-10">
+                  <button
+                    onClick={() => handleModeSwitch("real")}
+                    className={cn(
+                      "w-full py-2 flex items-center justify-center gap-2 text-xs font-bold font-syne rounded-lg transition-colors duration-300",
+                      !isPractice ? "text-[#08080F]" : "text-tx-text-secondary hover:text-white"
+                    )}
+                  >
+                    <DollarSign className="w-3.5 h-3.5" /> Real Money
+                  </button>
+                </div>
+                <motion.div
+                  layoutId="modeBackground"
+                  className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-tx-primary rounded-lg z-0"
+                  animate={{ left: isPractice ? "4px" : "calc(50% + 2px)" }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-2 space-y-2 overflow-y-auto">
+        <nav className="flex-1 px-2 py-2 space-y-1 overflow-y-auto overflow-x-hidden">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
-            
             return (
-              <Link key={item.name} href={item.href} className="block relative group">
+              <Link
+                key={item.name}
+                href={item.href}
+                title={collapsed ? item.name : undefined}
+                className="block relative group"
+              >
                 <div
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300",
+                    "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300",
+                    collapsed ? "justify-center" : "",
                     isActive
                       ? "bg-tx-primary/10 text-tx-primary font-medium"
                       : "text-tx-text-secondary hover:text-white hover:bg-tx-glass",
@@ -158,20 +214,36 @@ export function Sidebar() {
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
-                  <item.icon className={cn(
-                    "w-5 h-5 transition-transform duration-300 group-hover:scale-110",
-                    isActive ? "text-tx-primary" : "",
-                    item.highlight && !isActive ? "text-tx-primary" : "",
-                    item.watchlist && !isActive ? (isPractice ? "text-tx-primary" : "text-yellow-400") : ""
-                  )} />
-                  <span className="font-inter text-sm flex-1">{item.name}</span>
-                  {item.badge && (
-                    <span className="text-[8px] uppercase tracking-widest font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-sm">
+                  <item.icon
+                    className={cn(
+                      "w-5 h-5 flex-shrink-0 transition-transform duration-300 group-hover:scale-110",
+                      isActive ? "text-tx-primary" : "",
+                      item.highlight && !isActive ? "text-tx-primary" : "",
+                      item.watchlist && !isActive ? (isPractice ? "text-tx-primary" : "text-yellow-400") : ""
+                    )}
+                  />
+                  <AnimatePresence>
+                    {!collapsed && (
+                      <motion.span
+                        className="font-inter text-sm flex-1 whitespace-nowrap overflow-hidden"
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {item.name}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                  {!collapsed && item.badge && (
+                    <span className="text-[8px] uppercase tracking-widest font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-sm flex-shrink-0">
                       {item.badge}
                     </span>
                   )}
-                  {item.pro && (
-                    <span className="text-[9px] uppercase tracking-wider font-bold bg-[#FFB800]/20 text-[#FFB800] px-1.5 py-0.5 rounded-sm">PRO</span>
+                  {!collapsed && item.pro && (
+                    <span className="text-[9px] uppercase tracking-wider font-bold bg-[#FFB800]/20 text-[#FFB800] px-1.5 py-0.5 rounded-sm flex-shrink-0">
+                      PRO
+                    </span>
                   )}
                 </div>
               </Link>
@@ -179,27 +251,43 @@ export function Sidebar() {
           })}
         </nav>
 
-        <Link href="/settings" className="p-4 border-t border-tx-border block">
-          <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-tx-glass transition-colors cursor-pointer group">
-            <div className="w-10 h-10 rounded-full bg-tx-secondary flex items-center justify-center flex-shrink-0 shadow-glow-purple overflow-hidden">
+        {/* Profile Footer */}
+        <Link href="/settings" className="p-3 border-t border-tx-border block flex-shrink-0">
+          <div className={cn(
+            "flex items-center gap-3 p-2 rounded-xl hover:bg-tx-glass transition-colors cursor-pointer group",
+            collapsed && "justify-center"
+          )}>
+            <div className="w-8 h-8 rounded-full bg-tx-secondary flex items-center justify-center flex-shrink-0 shadow-glow-purple overflow-hidden">
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt={profile.full_name} className="w-full h-full object-cover" />
               ) : (
-                <span className="text-white font-syne font-bold text-sm">
+                <span className="text-white font-syne font-bold text-xs">
                   {profile ? getInitials(profile.full_name) : "--"}
                 </span>
               )}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{profile?.full_name || "Loading..."}</p>
-              <p className="text-xs text-tx-text-secondary truncate">
-                {profile ? `Member since ${new Date(profile.member_since).getFullYear()}` : "TradeoffX Citizen"}
-              </p>
-            </div>
-            <Settings className="w-4 h-4 text-tx-text-muted group-hover:text-white transition-colors" />
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.div
+                  className="flex-1 min-w-0"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <p className="text-sm font-medium text-white truncate">{profile?.full_name || "Loading..."}</p>
+                  <p className="text-xs text-tx-text-secondary truncate">
+                    {profile ? `Member since ${new Date(profile.member_since).getFullYear()}` : "TradeoffX Citizen"}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {!collapsed && (
+              <Settings className="w-4 h-4 text-tx-text-muted group-hover:text-white transition-colors flex-shrink-0" />
+            )}
           </div>
         </Link>
-      </div>
+      </motion.div>
 
       {/* Toast Notification */}
       <AnimatePresence>
