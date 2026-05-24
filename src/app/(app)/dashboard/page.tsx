@@ -659,7 +659,7 @@ export default function Dashboard() {
       >
         
         {/* Left 70% — Decision Performance Chart */}
-        <div className="lg:col-span-8 bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm">
+        <div className="lg:col-span-8 bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-[#f0f0f0] text-sm font-medium">Decision Quality Over Time</h3>
             <div className="flex bg-[#161616] border border-[#222] rounded-full p-0.5">
@@ -678,7 +678,7 @@ export default function Dashboard() {
           </div>
           
           <div 
-            className="relative h-[240px] w-full"
+            className="relative flex-1 min-h-[240px] w-full"
             onMouseMove={handleChartMouseMove}
             onMouseLeave={() => setHoveredChartPoint(null)}
           >
