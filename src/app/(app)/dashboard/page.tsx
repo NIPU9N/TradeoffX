@@ -461,16 +461,19 @@ export default function Dashboard() {
     });
   };
 
-  const chartMax = 100;
-  const chartMin = 0;
+  const bestDecision = filteredChartData.length > 0 ? Math.max(...filteredChartData.map(d => d.score)) : 100;
+  const worstDecision = filteredChartData.length > 0 ? Math.min(...filteredChartData.map(d => d.score)) : 0;
+
+  const range = bestDecision - worstDecision;
+  const padding = Math.max(range * 0.2, 5);
+  const chartMax = Math.min(100, bestDecision + padding);
+  const chartMin = Math.max(0, worstDecision - padding);
+  
   const chartPoints = filteredChartData.map((d, i) => {
     const x = filteredChartData.length > 1 ? (i / (filteredChartData.length - 1)) * 100 : 50;
     const y = 100 - ((d.score - chartMin) / (chartMax - chartMin)) * 100;
     return `${x},${y}`;
   }).join(' ');
-
-  const bestDecision = filteredChartData.length > 0 ? Math.max(...filteredChartData.map(d => d.score)) : 0;
-  const worstDecision = filteredChartData.length > 0 ? Math.min(...filteredChartData.map(d => d.score)) : 0;
 
   const filteredPositions = (derivedData?.enrichedPositions || data.openPositions).filter(p => {
     if (openPositionsFilter === "All") return true;
