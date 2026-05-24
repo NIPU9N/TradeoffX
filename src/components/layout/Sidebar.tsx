@@ -81,7 +81,6 @@ export function Sidebar() {
     { name: "Watchlist", href: "/watchlist", icon: Eye, watchlist: true },
     { name: "Outcome Review", href: "/review", icon: CheckCircle },
     { name: "Pattern Mirror", href: "/mirror", icon: Brain },
-    { name: "My Progress", href: "/compare", icon: GitCompare, pro: true },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
