@@ -22,7 +22,7 @@ export function StrategyTemplatesPanel({ onApplyTemplate }: StrategyTemplatesPan
   return (
     <div className="space-y-4">
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-tx-border">
+      <div className="flex flex-wrap gap-2 border-b border-tx-border">
         {categories.map((cat) => (
           <button
             key={cat.value}

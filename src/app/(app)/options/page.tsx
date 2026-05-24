@@ -183,9 +183,9 @@ export default function OptionsPage() {
       />
 
       {/* Main Content - 3 Column Layout */}
-      <div className="flex h-[calc(100vh-180px)] gap-6 p-6">
+      <div className="flex flex-col xl:flex-row h-auto xl:h-[calc(100vh-180px)] gap-6 p-4 md:p-6 overflow-y-auto xl:overflow-hidden">
         {/* LEFT: Strategy Templates */}
-        <div className="w-64 overflow-y-auto">
+        <div className="w-full xl:w-64 overflow-y-auto flex-shrink-0">
           <StrategyTemplatesPanel onApplyTemplate={handleApplyTemplate} />
         </div>
 
@@ -216,7 +216,7 @@ export default function OptionsPage() {
         </div>
 
         {/* RIGHT: Payoff Chart & Greeks */}
-        <div className="w-[450px] overflow-y-auto">
+        <div className="w-full xl:w-[450px] overflow-y-auto flex-shrink-0">
           <PayoffChartPanel
             positions={positions}
             optionChain={optionChain}

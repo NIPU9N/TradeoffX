@@ -37,7 +37,7 @@ export function OptionsTopBar({
         </div>
 
         {/* Info Cards Row */}
-        <div className="grid grid-cols-6 gap-3">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
           {/* Spot Price */}
           <div className="bg-tx-bg border border-tx-border/50 rounded-lg p-3 flex flex-col">
             <p className="text-[10px] uppercase tracking-wider text-tx-text-secondary mb-1">Spot</p>
