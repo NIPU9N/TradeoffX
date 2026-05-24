@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     let parsed;
     try {
-      const prompt = `You are an investment behavior analyst. Analyze these ${mode} mode decisions for an Indian retail investor. Identify exactly 3 behavioral patterns affecting returns in this mode only. For each pattern, provide a brief, summarized explanation in the pattern_text. Be specific and data-driven. Format as JSON only: {"patterns":[{"pattern_text":"string","confidence_percent":number,"based_on_decisions":number,"pattern_type":"bias|timing|asset_class|emotion|technical"}]}. Data: ${JSON.stringify(formatted)}`;
+      const prompt = `You are an investment behavior analyst. Analyze these ${mode} mode decisions for an Indian retail investor. Identify exactly 3 behavioral patterns affecting returns in this mode only. For each pattern, provide a brief, summarized explanation in the pattern_text. CRITICAL: The pattern_text MUST NOT exceed 10-12 words. Be specific and data-driven. Format as JSON only: {"patterns":[{"pattern_text":"string","confidence_percent":number,"based_on_decisions":number,"pattern_type":"bias|timing|asset_class|emotion|technical"}]}. Data: ${JSON.stringify(formatted)}`;
       const result = await model.generateContent(prompt);
       const text = result.response.text();
       if (!text) throw new Error("No AI response");
