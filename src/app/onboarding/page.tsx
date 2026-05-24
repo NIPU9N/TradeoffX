@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Zap, ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createBrowserClient } from "@supabase/ssr";
+import { Logo } from "@/components/ui/Logo";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -84,9 +85,7 @@ export default function OnboardingPage() {
 
       {/* Logo */}
       <Link href="/" className="absolute top-8 left-8 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-tx-primary/10 border border-tx-primary/30 flex items-center justify-center">
-          <Zap className="w-4 h-4 text-tx-primary" />
-        </div>
+        <Logo className="w-8 h-8 rounded-lg bg-white/5 border border-tx-primary/30" />
         <span className="font-syne font-bold text-lg text-white">TradeoffX</span>
       </Link>
 

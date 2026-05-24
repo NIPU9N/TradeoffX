@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn, DEVELOPER_EMAILS } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { Logo } from "@/components/ui/Logo";
 import {
   LayoutDashboard,
   PlusCircle,
@@ -120,9 +121,7 @@ export function Sidebar() {
                 className="flex flex-col overflow-hidden"
               >
                 <Link href="/" className="flex items-center gap-3 mb-1">
-                  <div className="w-8 h-8 rounded-lg bg-tx-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Zap className="w-5 h-5 text-tx-primary" />
-                  </div>
+                  <Logo className="w-8 h-8 rounded-lg bg-white/5 flex-shrink-0" />
                   <span className="font-syne font-bold text-xl text-white whitespace-nowrap">TradeoffX</span>
                 </Link>
                 <p className="text-[10px] text-tx-text-muted uppercase tracking-widest pl-11 whitespace-nowrap">
@@ -133,8 +132,8 @@ export function Sidebar() {
           </AnimatePresence>
 
           {collapsed && (
-            <div className="w-8 h-8 rounded-lg bg-tx-primary/10 flex items-center justify-center mx-auto">
-              <Zap className="w-5 h-5 text-tx-primary" />
+            <div className="mx-auto">
+              <Logo className="w-8 h-8 rounded-lg bg-white/5" />
             </div>
           )}
         </div>

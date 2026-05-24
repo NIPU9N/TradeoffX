@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
 import { ArrowRight, BookOpen, BarChart2, TrendingUp, AlertTriangle, Shield, CheckCircle2, ChevronDown, Zap, Target, Brain, Sparkles, Star, Users, Trophy, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Logo } from "@/components/ui/Logo";
 
 const Counter = ({ from = 0, to, duration = 2 }: { from?: number, to: number, duration?: number }) => {
   const [count, setCount] = useState(from);
@@ -71,9 +72,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex justify-between items-center">
           <div className="flex items-center justify-start">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
+              <Logo className="w-8 h-8 rounded bg-white/5" />
               <span className="font-bold text-xl tracking-tight text-white">TradeoffX</span>
             </Link>
           </div>
@@ -818,7 +817,7 @@ export default function LandingPage() {
           className="mt-20 pt-12 border-t border-slate-800/50 grid grid-cols-1 md:grid-cols-3 gap-8 items-center"
         >
           <div className="flex items-center justify-center md:justify-start gap-2">
-            <TrendingUp className="w-5 h-5 text-blue-400" />
+            <Logo className="w-6 h-6 rounded bg-white/5" />
             <span className="font-bold text-white">TradeoffX</span>
           </div>
           

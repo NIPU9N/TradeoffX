@@ -5,6 +5,7 @@ import { ModeProvider } from "@/context/ModeContext";
 import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
 import { cn } from "@/lib/utils";
 import { Menu } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 
 function AppContent({ children }: { children: React.ReactNode }) {
   const { collapsed, setMobileOpen } = useSidebar();
@@ -16,9 +17,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
           <Menu className="w-6 h-6" />
         </button>
         <div className="flex items-center gap-2 font-syne font-bold text-white">
-          <div className="w-8 h-8 rounded-lg bg-tx-primary/10 flex items-center justify-center">
-            <span className="text-tx-primary">⚡</span>
-          </div>
+          <Logo className="w-8 h-8 rounded bg-white/5" />
           TradeoffX
         </div>
       </div>
