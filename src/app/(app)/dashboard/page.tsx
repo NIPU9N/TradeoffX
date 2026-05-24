@@ -659,7 +659,7 @@ export default function Dashboard() {
       >
         
         {/* Left 70% — Decision Performance Chart */}
-        <div className="lg:col-span-8 bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm flex flex-col">
+        <div className="lg:col-span-8 bg-[#111] border border-[#222] rounded-[8px] p-5 shadow-sm self-start">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-[#f0f0f0] text-sm font-medium">Decision Quality Over Time</h3>
             <div className="flex bg-[#161616] border border-[#222] rounded-full p-0.5">
@@ -678,7 +678,7 @@ export default function Dashboard() {
           </div>
           
           <div 
-            className="relative flex-1 min-h-[240px] w-full"
+            className="relative h-[240px] w-full"
             onMouseMove={handleChartMouseMove}
             onMouseLeave={() => setHoveredChartPoint(null)}
           >
@@ -690,11 +690,11 @@ export default function Dashboard() {
                 </linearGradient>
               </defs>
               {/* Grid Lines */}
-              <line x1="0" y1="0" x2="100" y2="0" stroke="#222" strokeWidth="0.5" />
-              <line x1="0" y1="25" x2="100" y2="25" stroke="#222" strokeWidth="0.5" />
-              <line x1="0" y1="50" x2="100" y2="50" stroke="#222" strokeWidth="0.5" />
-              <line x1="0" y1="75" x2="100" y2="75" stroke="#222" strokeWidth="0.5" />
-              <line x1="0" y1="100" x2="100" y2="100" stroke="#222" strokeWidth="0.5" />
+              <line x1="0" y1="0" x2="100" y2="0" stroke="#222" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              <line x1="0" y1="25" x2="100" y2="25" stroke="#222" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              <line x1="0" y1="50" x2="100" y2="50" stroke="#222" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              <line x1="0" y1="75" x2="100" y2="75" stroke="#222" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              <line x1="0" y1="100" x2="100" y2="100" stroke="#222" strokeWidth="1" vectorEffect="non-scaling-stroke" />
               
               <motion.polygon 
                 points={`${chartPoints} 100,100 0,100`} 
@@ -707,7 +707,8 @@ export default function Dashboard() {
                 points={chartPoints} 
                 fill="none" 
                 stroke={isPractice ? "#10B981" : "#22c55e"} 
-                strokeWidth="1.5"
+                strokeWidth="2"
+                vectorEffect="non-scaling-stroke"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
                 transition={{ delay: 1.2, duration: 1.5, ease: "easeInOut" }}
