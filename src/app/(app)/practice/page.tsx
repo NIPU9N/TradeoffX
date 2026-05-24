@@ -456,12 +456,20 @@ export default function PracticePortfolioPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.35 }}
                   whileHover={{ y: -3, scale: 1.01 }}
-                  className="flex items-center justify-between bg-[#161616] border border-[#222] rounded-[6px] px-4 py-4 hover:border-[#333] transition-colors gap-4"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between bg-[#161616] border border-[#222] rounded-[6px] px-4 py-4 hover:border-[#333] transition-colors gap-4"
                 >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-syne font-bold text-[#f0f0f0] text-sm">{position.asset_name}</p>
-                    <p className="text-[10px] text-[#5a5a5a] uppercase tracking-widest mt-0.5">{position.asset_type.replace("_", " ")} • QTY {position.quantity}</p>
-                    <p className="text-[11px] text-[#5a5a5a] mt-1">
+                  <div className="flex-1 min-w-0 w-full flex justify-between sm:block">
+                    <div>
+                      <p className="font-syne font-bold text-[#f0f0f0] text-sm">{position.asset_name}</p>
+                      <p className="text-[10px] text-[#5a5a5a] uppercase tracking-widest mt-0.5">{position.asset_type.replace("_", " ")} • QTY {position.quantity}</p>
+                    </div>
+                    <div className="text-right sm:hidden">
+                      <p className={cn("font-mono font-bold text-sm", pnl >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>{pnl >= 0 ? "+" : "-"}₹{Math.abs(pnl).toFixed(2)}</p>
+                      <p className={cn("text-[11px] font-mono", pnl >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>{pnl >= 0 ? "+" : ""}{pnlPct.toFixed(2)}%</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center w-full sm:w-auto sm:block">
+                    <p className="text-[11px] text-[#5a5a5a] sm:mt-1">
                       Entry ₹{Number(position.entry_price).toFixed(2)} • Live ₹{mark.toFixed(2)}
                       {priceChange != null && (
                         <span className={cn("ml-2 font-mono", priceChange >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>
@@ -469,12 +477,12 @@ export default function PracticePortfolioPage() {
                         </span>
                       )}
                     </p>
+                    <div className="hidden sm:block text-right">
+                      <p className={cn("font-mono font-bold text-sm", pnl >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>{pnl >= 0 ? "+" : "-"}₹{Math.abs(pnl).toFixed(2)}</p>
+                      <p className={cn("text-[11px] font-mono", pnl >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>{pnl >= 0 ? "+" : ""}{pnlPct.toFixed(2)}%</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className={cn("font-mono font-bold text-sm", pnl >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>{pnl >= 0 ? "+" : "-"}₹{Math.abs(pnl).toFixed(2)}</p>
-                    <p className={cn("text-[11px] font-mono", pnl >= 0 ? "text-[#10B981]" : "text-[#ef4444]")}>{pnl >= 0 ? "+" : ""}{pnlPct.toFixed(2)}%</p>
-                  </div>
-                  <button onClick={() => handleClosePosition(position)} disabled={closingPositionId === position.id} className="flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] border border-[#ef4444]/40 bg-[#ef4444]/10 text-[#ef4444] text-xs hover:bg-[#ef4444]/20 disabled:opacity-50 transition-colors flex-shrink-0">
+                  <button onClick={() => handleClosePosition(position)} disabled={closingPositionId === position.id} className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-[6px] border border-[#ef4444]/40 bg-[#ef4444]/10 text-[#ef4444] text-xs hover:bg-[#ef4444]/20 disabled:opacity-50 transition-colors flex-shrink-0">
                     <XCircle className="w-3.5 h-3.5" />{closingPositionId === position.id ? "Closing..." : "Close"}
                   </button>
                 </motion.div>

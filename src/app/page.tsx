@@ -68,7 +68,7 @@ export default function LandingPage() {
       
       {/* NAV */}
       <header className="fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 grid grid-cols-3 items-center">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex justify-between items-center">
           <div className="flex items-center justify-start">
             <Link href="/" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center">
@@ -131,7 +131,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 30 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ delay: 0.2, type: "spring" }}
-            className="text-6xl md:text-8xl font-bold leading-tight mb-6 tracking-tight"
+            className="text-5xl md:text-7xl lg:text-8xl font-bold leading-tight mb-6 tracking-tight"
           >
             Stop Trading on Vibes.<br/>
             <motion.span 
@@ -278,9 +278,9 @@ export default function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-20"
+            className="text-center mb-12 md:mb-20"
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">
               Your Complete Trading Ecosystem
             </h2>
             <p className="text-slate-400 max-w-3xl mx-auto text-lg">

@@ -5,15 +5,20 @@ import { createContext, useContext, useState, useEffect } from "react";
 interface SidebarContextType {
   collapsed: boolean;
   toggleCollapsed: () => void;
+  mobileOpen: boolean;
+  setMobileOpen: (open: boolean) => void;
 }
 
 const SidebarContext = createContext<SidebarContextType>({
   collapsed: false,
   toggleCollapsed: () => {},
+  mobileOpen: false,
+  setMobileOpen: () => {},
 });
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Persist preference
   useEffect(() => {
@@ -29,7 +34,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SidebarContext.Provider value={{ collapsed, toggleCollapsed }}>
+    <SidebarContext.Provider value={{ collapsed, toggleCollapsed, mobileOpen, setMobileOpen }}>
       {children}
     </SidebarContext.Provider>
   );

@@ -34,7 +34,7 @@ export function Sidebar() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const { mode, setMode, isPractice } = useMode();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const { collapsed, toggleCollapsed } = useSidebar();
+  const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } = useSidebar();
 
   useEffect(() => {
     async function loadProfile() {
@@ -89,8 +89,22 @@ export function Sidebar() {
 
   return (
     <>
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setMobileOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden"
+          />
+        )}
+      </AnimatePresence>
       <motion.div
-        className="fixed top-0 left-0 h-screen flex flex-col z-40 overflow-hidden"
+        className={cn(
+          "fixed top-0 left-0 h-screen flex flex-col z-40 overflow-hidden transition-transform duration-300 md:translate-x-0",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
         style={{ background: "#0A0A14", borderRight: "1px solid var(--color-tx-border)" }}
         animate={{ width: sidebarWidth }}
         transition={{ type: "spring", stiffness: 320, damping: 30 }}
@@ -193,6 +207,7 @@ export function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={() => setMobileOpen(false)}
                 title={collapsed ? item.name : undefined}
                 className="block relative group"
               >

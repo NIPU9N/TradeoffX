@@ -91,8 +91,8 @@ export default function MyDecisions() {
       </motion.div>
 
       {/* Filters */}
-      <motion.div variants={itemVariants} className="flex justify-between items-center bg-tx-card/50 p-4 rounded-xl border border-tx-border backdrop-blur-sm">
-        <div className="relative w-72">
+      <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-tx-card/50 p-4 rounded-xl border border-tx-border backdrop-blur-sm">
+        <div className="relative w-full md:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tx-text-muted" />
           <input 
             type="text" 
@@ -100,7 +100,7 @@ export default function MyDecisions() {
             className="w-full bg-tx-bg border border-tx-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-tx-primary transition-colors"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 hide-scrollbar">
           {["All", "Open", "Pending Review", "Reviewed"].map((filter) => (
             <button 
               key={filter} 
