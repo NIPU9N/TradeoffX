@@ -123,10 +123,10 @@ function ReviewContent() {
         ) : (
           <div className="grid gap-4">
             {pendingReviews.map((trade) => (
-              <Link key={trade.id} href={`/review?id=${trade.id}`} className="glass-card p-6 flex flex-col md:flex-row md:items-center justify-between group hover:border-tx-primary/50 transition-colors">
-                <div className="min-w-0 flex-1 pr-4">
+              <Link key={trade.id} href={`/review?id=${trade.id}`} className="glass-card p-6 flex flex-col md:flex-row md:items-center justify-between group hover:border-tx-primary/50 transition-colors overflow-hidden">
+                <div className="min-w-0 flex-1 mb-4 md:mb-0 md:pr-4">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
-                    <h3 className="font-syne text-xl font-bold text-white group-hover:text-tx-primary transition-colors truncate">{trade.asset_name}</h3>
+                    <h3 className="font-syne text-xl font-bold text-white group-hover:text-tx-primary transition-colors break-words">{trade.asset_name}</h3>
                     <span className="px-2 py-0.5 rounded bg-tx-bg text-tx-text-secondary text-xs border border-tx-border uppercase shrink-0">
                       {trade.asset_type.replace("_", " ")}
                     </span>
@@ -134,10 +134,10 @@ function ReviewContent() {
                   <p className="text-sm text-tx-text-muted mb-2">
                     Opened: {new Date(trade.decision_date).toLocaleDateString()}
                   </p>
-                  <p className="text-sm text-tx-text-secondary italic truncate w-full">"{trade.thesis}"</p>
+                  <p className="text-sm text-tx-text-secondary italic line-clamp-3">"{trade.thesis}"</p>
                 </div>
-                <div className="mt-4 md:mt-0 flex shrink-0">
-                  <div className="px-5 py-2.5 bg-tx-primary/10 text-tx-primary border border-tx-primary/30 rounded-lg text-sm font-medium group-hover:bg-tx-primary group-hover:text-tx-bg transition-colors flex items-center gap-2">
+                <div className="flex shrink-0">
+                  <div className="w-full md:w-auto px-5 py-2.5 bg-tx-primary/10 text-tx-primary border border-tx-primary/30 rounded-lg text-sm font-medium group-hover:bg-tx-primary group-hover:text-tx-bg transition-colors flex items-center justify-center gap-2">
                     Review Outcome <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
