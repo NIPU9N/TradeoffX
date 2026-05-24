@@ -57,7 +57,7 @@ export function PositionBuilder({ optionChain, onAddPosition }: PositionBuilderP
       <h3 className="font-syne text-lg font-bold">Add Position</h3>
 
       {/* First Row: Expiry, Strike, Type */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="text-xs uppercase tracking-wider text-tx-text-secondary mb-2 block">
             Expiry
@@ -130,15 +130,15 @@ export function PositionBuilder({ optionChain, onAddPosition }: PositionBuilderP
       </div>
 
       {/* Quantity & Premium Info */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="text-xs uppercase tracking-wider text-tx-text-secondary mb-2 block">
             Quantity
           </label>
-          <div className="flex items-center gap-2 bg-tx-bg border border-tx-border rounded-lg p-2">
+          <div className="flex items-center justify-between gap-2 bg-tx-bg border border-tx-border rounded-lg p-2">
             <button
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="px-2 py-1 text-tx-text-secondary hover:text-white transition-colors"
+              className="px-3 py-1 text-tx-text-secondary hover:text-white transition-colors bg-tx-card rounded-md border border-tx-border/50"
             >
               −
             </button>
@@ -146,24 +146,24 @@ export function PositionBuilder({ optionChain, onAddPosition }: PositionBuilderP
               type="number"
               value={quantity}
               onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-              className="flex-1 bg-transparent text-white text-center font-semibold focus:outline-none"
+              className="flex-1 min-w-0 w-full bg-transparent text-white text-center font-semibold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             <button
               onClick={() => setQuantity(quantity + 1)}
-              className="px-2 py-1 text-tx-text-secondary hover:text-white transition-colors"
+              className="px-3 py-1 text-tx-text-secondary hover:text-white transition-colors bg-tx-card rounded-md border border-tx-border/50"
             >
               +
             </button>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="text-sm">
-            <span className="text-tx-text-secondary">Option Price: </span>
+        <div className="flex flex-col justify-end gap-2">
+          <div className="flex justify-between items-center text-sm bg-tx-bg/80 border border-tx-border/50 px-3 py-2 rounded-lg">
+            <span className="text-tx-text-secondary">Option Price:</span>
             <span className="font-bold text-white">₹{premium.toFixed(2)}</span>
           </div>
-          <div className="text-sm">
-            <span className="text-tx-text-secondary">IV: </span>
+          <div className="flex justify-between items-center text-sm bg-tx-bg/80 border border-tx-border/50 px-3 py-2 rounded-lg">
+            <span className="text-tx-text-secondary">IV:</span>
             <span className="font-bold text-white">{iv.toFixed(2)}</span>
           </div>
         </div>
