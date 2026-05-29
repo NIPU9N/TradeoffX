@@ -13,6 +13,16 @@ export const KNOWN_ASSETS: KnownAsset[] = [
   { name: "Sensex", symbol: "SENSEX", type: "other" },
 
   {
+    "name": "Paisalo Digital Ltd",
+    "symbol": "PAISALO.NS",
+    "type": "stock"
+  },
+  {
+    "name": "Marine Electricals (India) Ltd",
+    "symbol": "MARINE.NS",
+    "type": "stock"
+  },
+  {
     "name": "Reliance Industries Ltd",
     "symbol": "RELIANCE.NS",
     "type": "stock"
