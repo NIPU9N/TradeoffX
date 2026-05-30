@@ -23,6 +23,11 @@ export const KNOWN_ASSETS: KnownAsset[] = [
     "type": "stock"
   },
   {
+    "name": "Garware Hi Tech Films Ltd",
+    "symbol": "GRWRHITECH.NS",
+    "type": "stock"
+  },
+  {
     "name": "Reliance Industries Ltd",
     "symbol": "RELIANCE.NS",
     "type": "stock"
