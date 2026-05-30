@@ -28,6 +28,11 @@ export const KNOWN_ASSETS: KnownAsset[] = [
     "type": "stock"
   },
   {
+    "name": "Ashapura Minechem Ltd",
+    "symbol": "ASHAPURMIN.NS",
+    "type": "stock"
+  },
+  {
     "name": "Reliance Industries Ltd",
     "symbol": "RELIANCE.NS",
     "type": "stock"
