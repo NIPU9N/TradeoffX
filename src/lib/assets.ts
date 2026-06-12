@@ -4991,10 +4991,10 @@ export const KNOWN_ASSETS: KnownAsset[] = [
     "name": "Sensex",
     "symbol": "^BSESN",
     "type": "other"
-  }
-];
+  },
   {
     "name": "EPack Prefab Technologies Ltd",
     "symbol": "EPACKPEB.NS",
     "type": "stock"
   },
+];
