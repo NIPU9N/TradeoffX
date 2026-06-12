@@ -4993,3 +4993,8 @@ export const KNOWN_ASSETS: KnownAsset[] = [
     "type": "other"
   }
 ];
+  {
+    "name": "EPack Prefab Technologies Ltd",
+    "symbol": "EPACKPEB.NS",
+    "type": "stock"
+  },
