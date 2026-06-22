@@ -4999,7 +4999,7 @@ export const KNOWN_ASSETS: KnownAsset[] = [
   },
   {
     "name": "Venus Pipes & Tubes Ltd",
-    "symbol": "VENUSPIPES",
+    "symbol": "VENUSPIPES.NS",
     "type": "stock"
   },
 ];
