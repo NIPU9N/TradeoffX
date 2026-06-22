@@ -4997,4 +4997,9 @@ export const KNOWN_ASSETS: KnownAsset[] = [
     "symbol": "EPACKPEB.NS",
     "type": "stock"
   },
+  {
+    "name": "Venus Pipes & Tubes Ltd",
+    "symbol": "VENUSPIPES",
+    "type": "stock"
+  },
 ];
